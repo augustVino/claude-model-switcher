@@ -24,11 +24,11 @@ npm install -g git+ssh://git@github.com:user/claude-model-switcher.git
 
 ## 前提条件
 
-- macOS / Linux
+- macOS / Linux / Windows
 - Claude Code CLI 已安装在 **npm 全局 bin 之外的路径**（如 `~/.local/bin/claude`）
-- Node.js >= 18（解析 JSON 配置时调用 node，开销极小）
+- Node.js >= 18
 
-> **PATH 要求：** 安装后 npm 全局 bin 目录中的 `claude` 会指向 wrapper。wrapper 通过 `type -aP claude` 查找真正的 claude 二进制（跳过自身）。如果真正的 claude 和 wrapper 在同一个目录下，wrapper 无法区分，会报错退出。
+> **PATH 要求：** 安装后 npm 全局 bin 目录中的 `claude` 会指向 wrapper。wrapper 通过遍历 PATH 查找真正的 claude 二进制（跳过自身）。如果真正的 claude 和 wrapper 在同一个目录下，wrapper 无法区分，会报错退出。
 
 ## 配置
 
@@ -138,7 +138,7 @@ claude @zhipu:glm-4.6 -p "hello"
 
 ## 隔离性
 
-每个终端进程拥有独立的环境变量空间。wrapper 通过 `exec` 替换自身为真正的 claude 进程，环境变量固化在进程内。多个终端窗口分别运行不同 provider 互不干扰。
+每个终端进程拥有独立的环境变量空间。wrapper 通过 `spawn` 启动真正的 claude 进程，环境变量固化在进程内。多个终端窗口分别运行不同 provider 互不干扰。
 
 ## 工作原理
 
@@ -146,7 +146,7 @@ claude @zhipu:glm-4.6 -p "hello"
 用户输入: claude @zhipu:glm-4.6 -r abc123
          │
          ▼
-  claude.sh (npm 全局 bin)
+  claude.js (npm 全局 bin)
          │
          ├─ 1. 检查配置文件是否存在
          ├─ 2. 从参数中提取 @zhipu:glm-4.6 → provider=zhipu, model=glm-4.6
@@ -156,8 +156,8 @@ claude @zhipu:glm-4.6 -p "hello"
          ├─ 6. 检查 --model 参数冲突（有则输出警告）
          ├─ 7. 检查 API Key 环境变量是否已设置
          ├─ 8. 设置 ANTHROPIC_* 环境变量（同时清除 ANTHROPIC_API_KEY）
-         ├─ 9. 通过 type -aP claude 查找真正的 claude 二进制（跳过自身）
-         └─ 10. exec 真正的 claude，传入剩余参数 -r abc123
+         ├─ 9. 遍历 PATH 查找真正的 claude 二进制（跳过自身，处理符号链接）
+         └─ 10. spawn 真正的 claude，传入剩余参数 -r abc123
          │
          ▼
   真正的 claude CLI（使用智谱后端运行）

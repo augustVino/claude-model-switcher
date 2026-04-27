@@ -1,3 +1,7 @@
-#!/usr/bin/env bash
-# 模拟 claude CLI：仅输出当前进程中的 ANTHROPIC_* 环境变量，供测试断言
-env | grep ^ANTHROPIC | sort || true
+#!/usr/bin/env node
+// 模拟 claude CLI：仅输出 ANTHROPIC_* 环境变量，供测试断言
+const vars = Object.entries(process.env)
+  .filter(([k]) => k.startsWith('ANTHROPIC'))
+  .sort(([a], [b]) => a.localeCompare(b))
+  .map(([k, v]) => `${k}=${v}`);
+console.log(vars.join('\n'));

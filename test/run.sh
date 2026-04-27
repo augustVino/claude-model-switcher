@@ -2,7 +2,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-WRAPPER="$SCRIPT_DIR/../bin/claude.sh"
+WRAPPER="$SCRIPT_DIR/../bin/claude.js"
 FIXTURES="$SCRIPT_DIR/fixtures"
 PASS=0
 FAIL=0
