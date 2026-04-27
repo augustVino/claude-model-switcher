@@ -2,8 +2,8 @@
 'use strict';
 
 const fs = require('fs');
-const path = require('path');
 const os = require('os');
+const path = require('path');
 const { spawn } = require('child_process');
 
 // 配置文件路径（优先 XDG，Windows 回退到 %APPDATA%，其余回退到 ~/.config）
@@ -167,53 +167,14 @@ process.env.ANTHROPIC_DEFAULT_OPUS_MODEL = resolvedModel;
 process.env.ANTHROPIC_DEFAULT_SONNET_MODEL = resolvedModel;
 process.env.ANTHROPIC_DEFAULT_HAIKU_MODEL = resolvedSmall;
 
-// 查找真正的 claude 二进制（跳过自身所在目录，避免循环调用）
-// 关键：npm 全局安装时 claude 是符号链接，需要用 realpath 做比较
-const selfDir = fs.realpathSync(path.dirname(process.argv[1]));
-const pathDirs = (process.env.PATH || '').split(path.delimiter);
-
-// Windows 上读取 PATHEXT 构建候选列表，其余平台只用 claude
-const candidates = process.platform === 'win32'
-  ? (process.env.PATHEXT || '.EXE;.CMD;.BAT;.PS1').split(';')
-      .map(ext => `claude${ext.toLowerCase()}`)
-      .concat(['claude'])
-  : ['claude'];
-
-let realClaude = null;
-for (const dir of pathDirs) {
-  for (const name of candidates) {
-    const fullPath = path.resolve(dir, name);
-    try {
-      fs.statSync(fullPath);
-    } catch {
-      continue;
-    }
-    // 跳过自身所在目录（用 realpath 比较，处理符号链接和大小写）
-    try {
-      if (fs.realpathSync(path.dirname(fullPath)) === selfDir) continue;
-    } catch {
-      // 损坏的符号链接或不可访问目录，跳过
-      continue;
-    }
-    realClaude = fullPath;
-    break;
-  }
-  if (realClaude) break;
-}
-
-if (!realClaude) {
-  process.stderr.write('Error: claude binary not found in PATH (excluding this wrapper)\n');
-  process.exit(1);
-}
-
-// spawn 真正的 claude，环境变量已固化在 process.env 中
+// spawn 真正的 claude（命令名为 claude，与自身 cc 不同，无冲突风险）
 // Windows 上 .cmd 文件需要 shell: true 才能执行
 const spawnOptions = { stdio: 'inherit' };
 if (process.platform === 'win32') {
   spawnOptions.shell = true;
 }
 
-const child = spawn(realClaude, args, spawnOptions);
+const child = spawn('claude', args, spawnOptions);
 child.on('error', (err) => {
   process.stderr.write(`Error: Failed to launch claude: ${err.message}\n`);
   process.exit(1);

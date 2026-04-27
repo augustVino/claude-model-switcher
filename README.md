@@ -11,9 +11,9 @@ Claude Code 默认只能使用 Anthropic 的模型。但很多场景下我们需
 Claude Model Switcher 让这一切变成一条命令：
 
 ```bash
-claude @zhipu              # 用智谱 GLM
-claude @lp:qwen3-plus      # 用公司内部指定模型
-claude                      # 用默认 provider（配置文件第一个）
+cc @zhipu              # 用智谱 GLM
+cc @lp:qwen3-plus      # 用公司内部指定模型
+cc                      # 用默认 provider（配置文件第一个）
 ```
 
 ## 安装
@@ -25,10 +25,8 @@ npm install -g git+ssh://git@github.com:user/claude-model-switcher.git
 ## 前提条件
 
 - macOS / Linux / Windows
-- Claude Code CLI 已安装在 **npm 全局 bin 之外的路径**（如 `~/.local/bin/claude`）
+- Claude Code CLI 已安装
 - Node.js >= 18
-
-> **PATH 要求：** 安装后 npm 全局 bin 目录中的 `claude` 会指向 wrapper。wrapper 通过遍历 PATH 查找真正的 claude 二进制（跳过自身）。如果真正的 claude 和 wrapper 在同一个目录下，wrapper 无法区分，会报错退出。
 
 ## 配置
 
@@ -72,28 +70,31 @@ source ~/.zshrc  # 或 source ~/.bashrc
 
 ```bash
 # 使用默认 provider（配置文件第一个）
-claude
+cc
 
 # 指定 provider（使用其默认模型）
-claude @zhipu
+cc @zhipu
 
 # 指定 provider + 模型
-claude @zhipu:glm-4.6
-claude @lp:qwen3-plus
+cc @zhipu:glm-4.6
+cc @lp:qwen3-plus
 
 # 列出所有已配置的 provider
-claude @list
+cc @list
 
 # 配合 Claude Code 官方参数使用（@ 参数位置灵活）
-claude @zhipu -r sessionID
-claude @lp -p "介绍一下这个项目"
-claude -r sessionID @zhipu
-claude @zhipu:glm-4.6 -p "hello"
+cc @zhipu -r sessionID
+cc @lp -p "介绍一下这个项目"
+cc -r sessionID @zhipu
+cc @zhipu:glm-4.6 -p "hello"
 ```
 
 ## 配置文件格式
 
-文件路径：`${XDG_CONFIG_HOME:-$HOME/.config}/claude-model-switcher/providers.json`
+文件路径：
+
+- macOS/Linux: `${XDG_CONFIG_HOME:-$HOME/.config}/claude-model-switcher/providers.json`
+- Windows: `%APPDATA%\claude-model-switcher\providers.json`
 
 ```json
 [
@@ -109,7 +110,7 @@ claude @zhipu:glm-4.6 -p "hello"
 
 | 字段 | 必填 | 说明 |
 |------|------|------|
-| name | 是 | provider 标识，用于 `@name`，仅允许 `[a-zA-Z0-9_-]` |
+| name | 是 | provider 标识，用于 `@name`，仅允许 `[a-zA-Z0-9_-]`，不可为 `list`（保留字） |
 | base_url | 是 | Anthropic 兼容 API 端点 |
 | api_key_env | 是 | 存放 API Key 的环境变量名 |
 | default_model | 否 | 不指定模型时的默认模型 |
@@ -118,7 +119,7 @@ claude @zhipu:glm-4.6 -p "hello"
 **规则：**
 
 - 无 `@` 参数时，使用数组中第一个 provider 作为默认
-- 若 provider 未配置 `default_model`，则调用时必须指定模型（`@lp:some-model`）
+- 若 provider 未配置 `default_model`，则调用时必须指定模型（`cc @lp:some-model`）
 - `default_small_model` 仅影响 `ANTHROPIC_SMALL_FAST_MODEL` 和 `ANTHROPIC_DEFAULT_HAIKU_MODEL`，其余环境变量使用 `default_model`
 
 ## 新增 Provider
@@ -138,17 +139,17 @@ claude @zhipu:glm-4.6 -p "hello"
 
 ## 隔离性
 
-每个终端进程拥有独立的环境变量空间。wrapper 通过 `spawn` 启动真正的 claude 进程，环境变量固化在进程内。多个终端窗口分别运行不同 provider 互不干扰。
+每个终端进程拥有独立的环境变量空间。`cc` 通过 `spawn` 启动真正的 claude 进程，环境变量固化在子进程内。多个终端窗口分别运行不同 provider 互不干扰。
 
 ## 工作原理
 
 ```
-用户输入: claude @zhipu:glm-4.6 -r abc123
+用户输入: cc @zhipu:glm-4.6 -r abc123
          │
          ▼
-  claude.js (npm 全局 bin)
+  cc (npm 全局 bin，Node.js wrapper)
          │
-         ├─ 1. 检查配置文件是否存在
+         ├─ 1. 读取并解析配置文件
          ├─ 2. 从参数中提取 @zhipu:glm-4.6 → provider=zhipu, model=glm-4.6
          ├─ 3. 若无 @provider，取配置文件第一个 provider 作为默认
          ├─ 4. 校验 provider name 合法性（仅允许字母数字下划线连字符）
@@ -156,8 +157,7 @@ claude @zhipu:glm-4.6 -p "hello"
          ├─ 6. 检查 --model 参数冲突（有则输出警告）
          ├─ 7. 检查 API Key 环境变量是否已设置
          ├─ 8. 设置 ANTHROPIC_* 环境变量（同时清除 ANTHROPIC_API_KEY）
-         ├─ 9. 遍历 PATH 查找真正的 claude 二进制（跳过自身，处理符号链接）
-         └─ 10. spawn 真正的 claude，传入剩余参数 -r abc123
+         └─ 9. spawn 真正的 claude，传入剩余参数 -r abc123
          │
          ▼
   真正的 claude CLI（使用智谱后端运行）
