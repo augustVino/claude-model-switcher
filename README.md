@@ -79,7 +79,7 @@ ccs @zhipu
 ccs @zhipu:glm-4.6
 ccs @lp:qwen3-plus
 
-# 列出所有已配置的 provider
+# 列出所有已配置的 provider 及其可用模型（树形展示）
 ccs @list
 
 # 配合 Claude Code 官方参数使用（@ 参数位置灵活）
@@ -87,6 +87,17 @@ ccs @zhipu -r sessionID
 ccs @lp -p "介绍一下这个项目"
 ccs -r sessionID @zhipu
 ccs @zhipu:glm-4.6 -p "hello"
+
+# @list 输出示例
+# Providers:
+#
+#   zhipu
+#     ├─ glm-4.6        [default]
+#     ├─ glm-4.5-air    [small]
+#     └─ glm-4-plus
+#
+#   lp
+#     └─ qwen3-plus     [default]
 ```
 
 ## 配置文件格式
@@ -115,6 +126,7 @@ ccs @zhipu:glm-4.6 -p "hello"
 | api_key_env | 是 | 存放 API Key 的环境变量名 |
 | default_model | 否 | 不指定模型时的默认模型 |
 | default_small_model | 否 | 轻量模型（留空则同 default_model） |
+| models | 否 | 可用模型列表（string[]）。不配置时回退显示 default_model + default_small_model |
 
 **规则：**
 
