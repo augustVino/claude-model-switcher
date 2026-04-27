@@ -6,6 +6,11 @@ const os = require('os');
 const path = require('path');
 const { spawn } = require('child_process');
 
+function die(msg) {
+  process.stderr.write(`Error: ${msg}\n`);
+  process.exit(1);
+}
+
 // 配置文件路径（优先 XDG，Windows 回退到 %APPDATA%，其余回退到 ~/.config）
 function getConfigPath() {
   const fileName = 'claude-model-switcher/providers.json';
@@ -44,14 +49,12 @@ try {
     process.stderr.write('  EOF\n\n');
     process.stderr.write('  export MY_API_KEY="your-api-key"\n');
   } else {
-    process.stderr.write(`Error: Failed to parse config: ${confPath}\n`);
+    die(`Failed to parse config: ${confPath}`);
   }
-  process.exit(1);
 }
 
 if (!Array.isArray(providers) || providers.length === 0) {
-  process.stderr.write(`Error: No providers configured in ${confPath}\n`);
-  process.exit(1);
+  die(`No providers configured in ${confPath}`);
 }
 
 // 校验每个 provider 的必填字段
@@ -59,13 +62,11 @@ const requiredFields = ['name', 'base_url', 'api_key_env'];
 for (const p of providers) {
   for (const field of requiredFields) {
     if (!p[field]) {
-      process.stderr.write(`Error: Provider "${p.name || '(unnamed)'}" missing required field "${field}" in ${confPath}\n`);
-      process.exit(1);
+      die(`Provider "${p.name || '(unnamed)'}" missing required field "${field}" in ${confPath}`);
     }
   }
   if (p.name === 'list') {
-    process.stderr.write(`Error: Provider name "list" is reserved (@list is a built-in command)\n`);
-    process.exit(1);
+    die(`Provider name "list" is reserved (@list is a built-in command)`);
   }
 }
 
@@ -103,8 +104,7 @@ if (!provider) {
 
 // 校验 provider name 仅允许字母、数字、下划线、连字符
 if (!/^[a-zA-Z0-9_-]+$/.test(provider)) {
-  process.stderr.write(`Error: Invalid provider name '${provider}'. Only [a-zA-Z0-9_-] allowed.\n`);
-  process.exit(1);
+  die(`Invalid provider name '${provider}'. Only [a-zA-Z0-9_-] allowed.`);
 }
 
 // 从配置文件中查找 provider
@@ -115,7 +115,7 @@ if (!providerConfig) {
   for (const p of providers) {
     process.stderr.write(`  @${p.name}\n`);
   }
-  process.exit(1);
+  die('');
 }
 
 const { base_url, api_key_env, default_model, default_small_model } = providerConfig;
@@ -131,8 +131,7 @@ for (const a of args) {
 // 检查 API Key 是否已设置
 const apiKey = process.env[api_key_env] || '';
 if (!apiKey) {
-  process.stderr.write(`Error: API key not set. Export ${api_key_env} in your shell config.\n`);
-  process.exit(1);
+  die(`API key not set. Export ${api_key_env} in your shell config.`);
 }
 
 // 设置 Anthropic 兼容环境变量，清除原始 API Key 避免冲突
@@ -151,8 +150,7 @@ if (model) {
   resolvedModel = default_model;
   resolvedSmall = default_small_model || default_model;
 } else {
-  process.stderr.write(`Error: Provider '@${provider}' has no default model. Specify one: claude @${provider}:<model>\n`);
-  process.exit(1);
+  die(`Provider '@${provider}' has no default model. Specify one: ccs @${provider}:<model>`);
 }
 
 process.env.ANTHROPIC_MODEL = resolvedModel;
@@ -171,8 +169,7 @@ if (process.platform === 'win32') {
 
 const child = spawn('claude', args, spawnOptions);
 child.on('error', (err) => {
-  process.stderr.write(`Error: Failed to launch claude: ${err.message}\n`);
-  process.exit(1);
+  die(`Failed to launch claude: ${err.message}`);
 });
 child.on('close', (code) => {
   process.exit(code ?? 1);
