@@ -29,8 +29,20 @@ try {
   providers = JSON.parse(fs.readFileSync(confPath, 'utf8'));
 } catch (e) {
   if (e.code === 'ENOENT') {
-    process.stderr.write(`Error: Config not found: ${confPath}\n`);
-    process.stderr.write('Create a JSON array with provider objects. See README for format.\n');
+    process.stderr.write(`Error: Config not found: ${confPath}\n\n`);
+    process.stderr.write('Quick setup:\n\n');
+    process.stderr.write(`  mkdir -p '${path.dirname(confPath)}'\n`);
+    process.stderr.write(`  cat > '${confPath}' << 'EOF'\n`);
+    process.stderr.write('  [\n');
+    process.stderr.write('    {\n');
+    process.stderr.write('      "name": "my-provider",\n');
+    process.stderr.write('      "base_url": "https://your-api-endpoint/anthropic",\n');
+    process.stderr.write('      "api_key_env": "MY_API_KEY",\n');
+    process.stderr.write('      "default_model": "model-name"\n');
+    process.stderr.write('    }\n');
+    process.stderr.write('  ]\n');
+    process.stderr.write('  EOF\n\n');
+    process.stderr.write('  export MY_API_KEY="your-api-key"\n');
   } else {
     process.stderr.write(`Error: Failed to parse config: ${confPath}\n`);
   }
