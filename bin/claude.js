@@ -78,14 +78,9 @@ const args = [];
 for (const arg of argv) {
   if (arg.startsWith('@') && !provider) {
     const raw = arg.slice(1);
-    // @list 特殊命令：列出所有已配置的 provider
+    // @list 特殊命令：列出所有已配置的 provider 及模型
     if (raw === 'list') {
-      console.log('Available providers:');
-      for (const p of providers) {
-        let line = `  @${p.name}`;
-        if (p.default_model) line += ` (default: ${p.default_model})`;
-        console.log(line);
-      }
+      require('./list')(providers);
       process.exit(0);
     }
     // 按 : 分割 provider 和 model（: 不与模型名中的 - 冲突）

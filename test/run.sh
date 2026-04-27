@@ -298,17 +298,149 @@ test_list_providers() {
   CURRENT="list_providers"
   setup
   write_config <<'EOF'
-[{"name":"zhipu","base_url":"https://z.ai/api","api_key_env":"Z_KEY","default_model":"glm-4","default_small_model":"glm-4-air"},{"name":"lp","base_url":"http://internal/api","api_key_env":"L_KEY"}]
+[{"name":"zhipu","base_url":"https://z.ai/api","api_key_env":"Z_KEY","default_model":"glm-4","default_small_model":"glm-4-air","models":["glm-4","glm-4-air","glm-4-plus"]},{"name":"lp","base_url":"http://internal/api","api_key_env":"L_KEY","default_model":"qwen3-plus"}]
 EOF
   run_wrapper @list
   assert_exit 0 "$rc"
-  assert_output "@zhipu" "$output"
-  assert_output "(default: glm-4)" "$output"
-  assert_output "@lp" "$output"
+  # 结构性断言：标题、无旧格式残留
+  assert_output "Providers:" "$output"
+  assert_not_output "Available providers:" "$output"
+  # Provider 分组：名称不带 @ 前缀
+  assert_output "zhipu" "$output"
+  assert_not_output "@zhipu" "$output"
+  assert_not_output "@lp" "$output"
+  assert_output "lp" "$output"
+  # 模型内容
+  assert_output "glm-4" "$output"
+  assert_output "[default]" "$output"
+  assert_output "glm-4-air" "$output"
+  assert_output "[small]" "$output"
+  assert_output "glm-4-plus" "$output"
+  assert_output "qwen3-plus" "$output"
+  # 树形结构：多模型时同时存在 ├─ 和 └─
+  assert_output "├─" "$output"
+  assert_output "└─" "$output"
+  teardown
+}
+
+test_list_no_models_fallback() {
+  CURRENT="list_no_models_fallback"
+  setup
+  write_config <<'EOF'
+[{"name":"zhipu","base_url":"https://z.ai/api","api_key_env":"Z_KEY","default_model":"glm-4","default_small_model":"glm-4-air"}]
+EOF
+  run_wrapper @list
+  assert_exit 0 "$rc"
+  assert_output "zhipu" "$output"
+  assert_output "glm-4" "$output"
+  assert_output "[default]" "$output"
+  assert_output "glm-4-air" "$output"
+  assert_output "[small]" "$output"
+  teardown
+}
+
+test_list_single_model() {
+  CURRENT="list_single_model"
+  setup
+  write_config <<'EOF'
+[{"name":"lp","base_url":"http://internal/api","api_key_env":"L_KEY","default_model":"qwen3-plus"}]
+EOF
+  run_wrapper @list
+  assert_exit 0 "$rc"
+  assert_output "└─" "$output"
+  assert_not_output "├─" "$output"
+  teardown
+}
+
+test_list_empty_models() {
+  CURRENT="list_empty_models"
+  setup
+  write_config <<'EOF'
+[{"name":"zhipu","base_url":"https://z.ai/api","api_key_env":"Z_KEY","default_model":"glm-4","models":[]}]
+EOF
+  run_wrapper @list
+  assert_exit 0 "$rc"
+  assert_output "glm-4" "$output"
+  assert_output "[default]" "$output"
+  assert_output "└─" "$output"
+  teardown
+}
+
+test_list_same_default_and_small() {
+  CURRENT="list_same_default_and_small"
+  setup
+  write_config <<'EOF'
+[{"name":"zhipu","base_url":"https://z.ai/api","api_key_env":"Z_KEY","default_model":"glm-4","default_small_model":"glm-4"}]
+EOF
+  run_wrapper @list
+  assert_exit 0 "$rc"
+  assert_output "[default]" "$output"
+  assert_not_output "[small]" "$output"
+  teardown
+}
+
+test_list_multi_provider_spacing() {
+  CURRENT="list_multi_provider_spacing"
+  setup
+  write_config <<'EOF'
+[{"name":"a","base_url":"https://a.ai/api","api_key_env":"A_KEY","default_model":"m1"},{"name":"b","base_url":"https://b.ai/api","api_key_env":"B_KEY","default_model":"m2"}]
+EOF
+  run_wrapper @list
+  assert_exit 0 "$rc"
+  assert_output $'a\n\n  b' "$output"
+  teardown
+}
+
+test_list_no_at_prefix() {
+  CURRENT="list_no_at_prefix"
+  setup
+  write_config <<'EOF'
+[{"name":"zhipu","base_url":"https://z.ai/api","api_key_env":"Z_KEY","default_model":"glm-4"}]
+EOF
+  run_wrapper @list
+  assert_exit 0 "$rc"
+  assert_output "zhipu" "$output"
+  assert_not_output "@zhipu" "$output"
+  assert_not_output "Available providers:" "$output"
+  teardown
+}
+
+test_list_models_excludes_default() {
+  CURRENT="list_models_excludes_default"
+  setup
+  write_config <<'EOF'
+[{"name":"zhipu","base_url":"https://z.ai/api","api_key_env":"Z_KEY","default_model":"glm-4","models":["glm-5-plus","glm-5-flash"]}]
+EOF
+  run_wrapper @list
+  assert_exit 0 "$rc"
+  assert_output "glm-5-plus" "$output"
+  assert_output "glm-5-flash" "$output"
+  assert_not_output "glm-4" "$output"
+  assert_not_output "[default]" "$output"
+  teardown
+}
+
+test_list_format_header_spacing() {
+  CURRENT="list_format_header_spacing"
+  setup
+  write_config <<'EOF'
+[{"name":"p","base_url":"https://p.ai/api","api_key_env":"P_KEY","default_model":"m1"}]
+EOF
+  run_wrapper @list
+  assert_exit 0 "$rc"
+  assert_output $'Providers:\n\n  p' "$output"
   teardown
 }
 
 test_list_providers
+test_list_no_models_fallback
+test_list_single_model
+test_list_empty_models
+test_list_same_default_and_small
+test_list_multi_provider_spacing
+test_list_no_at_prefix
+test_list_models_excludes_default
+test_list_format_header_spacing
 
 # --- --model conflict warning tests ---
 
