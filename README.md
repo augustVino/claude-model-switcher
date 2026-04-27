@@ -11,9 +11,9 @@ Claude Code 默认只能使用 Anthropic 的模型。但很多场景下我们需
 Claude Model Switcher 让这一切变成一条命令：
 
 ```bash
-cc @zhipu              # 用智谱 GLM
-cc @lp:qwen3-plus      # 用公司内部指定模型
-cc                      # 用默认 provider（配置文件第一个）
+ccs @zhipu              # 用智谱 GLM
+ccs @lp:qwen3-plus      # 用公司内部指定模型
+ccs                      # 用默认 provider（配置文件第一个）
 ```
 
 ## 安装
@@ -70,23 +70,23 @@ source ~/.zshrc  # 或 source ~/.bashrc
 
 ```bash
 # 使用默认 provider（配置文件第一个）
-cc
+ccs
 
 # 指定 provider（使用其默认模型）
-cc @zhipu
+ccs @zhipu
 
 # 指定 provider + 模型
-cc @zhipu:glm-4.6
-cc @lp:qwen3-plus
+ccs @zhipu:glm-4.6
+ccs @lp:qwen3-plus
 
 # 列出所有已配置的 provider
-cc @list
+ccs @list
 
 # 配合 Claude Code 官方参数使用（@ 参数位置灵活）
-cc @zhipu -r sessionID
-cc @lp -p "介绍一下这个项目"
-cc -r sessionID @zhipu
-cc @zhipu:glm-4.6 -p "hello"
+ccs @zhipu -r sessionID
+ccs @lp -p "介绍一下这个项目"
+ccs -r sessionID @zhipu
+ccs @zhipu:glm-4.6 -p "hello"
 ```
 
 ## 配置文件格式
@@ -119,7 +119,7 @@ cc @zhipu:glm-4.6 -p "hello"
 **规则：**
 
 - 无 `@` 参数时，使用数组中第一个 provider 作为默认
-- 若 provider 未配置 `default_model`，则调用时必须指定模型（`cc @lp:some-model`）
+- 若 provider 未配置 `default_model`，则调用时必须指定模型（`ccs @lp:some-model`）
 - `default_small_model` 仅影响 `ANTHROPIC_SMALL_FAST_MODEL` 和 `ANTHROPIC_DEFAULT_HAIKU_MODEL`，其余环境变量使用 `default_model`
 
 ## 新增 Provider
@@ -139,15 +139,15 @@ cc @zhipu:glm-4.6 -p "hello"
 
 ## 隔离性
 
-每个终端进程拥有独立的环境变量空间。`cc` 通过 `spawn` 启动真正的 claude 进程，环境变量固化在子进程内。多个终端窗口分别运行不同 provider 互不干扰。
+每个终端进程拥有独立的环境变量空间。`ccs` 通过 `spawn` 启动真正的 claude 进程，环境变量固化在子进程内。多个终端窗口分别运行不同 provider 互不干扰。
 
 ## 工作原理
 
 ```
-用户输入: cc @zhipu:glm-4.6 -r abc123
+用户输入: ccs @zhipu:glm-4.6 -r abc123
          │
          ▼
-  cc (npm 全局 bin，Node.js wrapper)
+  ccs (npm 全局 bin，Node.js wrapper)
          │
          ├─ 1. 读取并解析配置文件
          ├─ 2. 从参数中提取 @zhipu:glm-4.6 → provider=zhipu, model=glm-4.6
