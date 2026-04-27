@@ -1,5 +1,5 @@
 {
-  "name": "claude-model-switcher",
+  "name": "@vinoorg/claude-model-switcher",
   "version": "1.0.0",
   "type": "module",
   "description": "Switch AI providers in Claude Code CLI via @provider syntax",
