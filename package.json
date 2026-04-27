@@ -1,15 +1,25 @@
 {
   "name": "claude-model-switcher",
   "version": "1.0.0",
+  "type": "module",
   "description": "Switch AI providers in Claude Code CLI via @provider syntax",
   "bin": {
-    "ccs": "./bin/claude.js"
+    "ccs": "./bin/ccs.ts"
   },
   "files": [
-    "bin/"
+    "bin/",
+    "src/"
   ],
   "license": "MIT",
   "engines": {
-    "node": ">=18"
+    "bun": ">=1.0"
+  },
+  "scripts": {
+    "test": "bun test",
+    "check": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.7.0"
   }
 }

@@ -1,9 +1,9 @@
-#!/usr/bin/env node
-'use strict';
+import type { Provider } from './types';
+import { resolveProviderModels } from './types';
 
 const TAG_COL = 18;
 
-module.exports = function listProviders(providers) {
+export function listProviders(providers: Provider[]): void {
   console.log('Providers:');
   console.log('');
 
@@ -11,7 +11,7 @@ module.exports = function listProviders(providers) {
     const p = providers[i];
     console.log(`  ${p.name}`);
 
-    const models = resolveModels(p);
+    const models = resolveProviderModels(p);
     for (let j = 0; j < models.length; j++) {
       const isLast = j === models.length - 1;
       const prefix = isLast ? '└─' : '├─';
@@ -21,24 +21,15 @@ module.exports = function listProviders(providers) {
 
     if (i < providers.length - 1) console.log('');
   }
-};
-
-function resolveModels(provider) {
-  if (Array.isArray(provider.models) && provider.models.length > 0) {
-    return provider.models;
-  }
-  const set = new Set();
-  if (provider.default_model) set.add(provider.default_model);
-  if (provider.default_small_model && provider.default_small_model !== provider.default_model) {
-    set.add(provider.default_small_model);
-  }
-  return Array.from(set);
 }
 
-function buildTag(model, provider) {
-  const tags = [];
+function buildTag(model: string, provider: Provider): string {
+  const tags: string[] = [];
   if (model === provider.default_model) tags.push('[default]');
-  if (model === provider.default_small_model && model !== provider.default_model) {
+  if (
+    model === provider.default_small_model &&
+    model !== provider.default_model
+  ) {
     tags.push('[small]');
   }
   if (tags.length === 0) return '';

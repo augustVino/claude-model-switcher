@@ -22,11 +22,13 @@ ccs                      # 用默认 provider（配置文件第一个）
 npm install -g git+ssh://git@github.com:user/claude-model-switcher.git
 ```
 
+> **注意：** 本工具运行时依赖 [Bun](https://bun.sh/)（>= 1.0），安装前请确保已安装 Bun。
+
 ## 前提条件
 
 - macOS / Linux / Windows
 - Claude Code CLI 已安装
-- Node.js >= 18
+- Bun >= 1.0
 
 ## 配置
 
@@ -42,6 +44,7 @@ cat > ~/.config/claude-model-switcher/providers.json << 'EOF'
     "api_key_env": "ZHIPU_API_KEY",
     "default_model": "glm-4.6",
     "default_small_model": "glm-4.5-air"
+    // "models": ["model-1", "model-2"]  // 可选：显式声明可用模型列表
   },
   {
     "name": "lp",
@@ -115,6 +118,7 @@ ccs @zhipu:glm-4.6 -p "hello"
     "api_key_env": "ZHIPU_API_KEY",
     "default_model": "glm-4.6",
     "default_small_model": "glm-4.5-air"
+    // "models": ["model-1", "model-2"]  // 可选：显式声明可用模型列表
   }
 ]
 ```
@@ -159,7 +163,7 @@ ccs @zhipu:glm-4.6 -p "hello"
 用户输入: ccs @zhipu:glm-4.6 -r abc123
          │
          ▼
-  ccs (npm 全局 bin，Node.js wrapper)
+  ccs (npm 全局 bin，Bun wrapper)
          │
          ├─ 1. 读取并解析配置文件
          ├─ 2. 从参数中提取 @zhipu:glm-4.6 → provider=zhipu, model=glm-4.6
