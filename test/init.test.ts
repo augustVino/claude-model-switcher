@@ -51,4 +51,39 @@ describe('initConfig', () => {
     expect(stdoutMsg).toContain('Config initialized');
     expect(stdoutMsg).toContain(configPath);
   });
+
+  it('exits 0 with success message when config already exists and valid', async () => {
+    const configDir = join(tmpDir, 'claude-model-switcher');
+    mkdirSync(configDir, { recursive: true });
+    const configPath = join(configDir, 'providers.json');
+    writeFileSync(configPath, JSON.stringify([{
+      name: 'test-provider',
+      base_url: 'https://test.example.com/api',
+      api_key_env: 'TEST_KEY',
+    }]), 'utf8');
+
+    let stdoutMsg = '';
+    spyOn(process.stdout, 'write').mockImplementation((msg: string) => { stdoutMsg += msg; return true; });
+
+    await runInit(configPath);
+
+    expect(stdoutMsg).toContain('Config file already exists');
+    expect(stdoutMsg).toContain(configPath);
+    expect(capturedExitCode).toBe(0);
+  });
+
+  it('exits 1 with error when config exists but is invalid', async () => {
+    const configDir = join(tmpDir, 'claude-model-switcher');
+    mkdirSync(configDir, { recursive: true });
+    const configPath = join(configDir, 'providers.json');
+    writeFileSync(configPath, 'not valid json', 'utf8');
+
+    let stderrMsg = '';
+    spyOn(process.stderr, 'write').mockImplementation((msg: string) => { stderrMsg += msg; return true; });
+
+    await runInit(configPath);
+
+    expect(stderrMsg).toContain('invalid');
+    expect(capturedExitCode).toBe(1);
+  });
 });
