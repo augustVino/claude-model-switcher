@@ -13,14 +13,14 @@ import { spawn, type SpawnOptions } from 'node:child_process';
 import type { ChildProcess } from 'node:child_process';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-function getVersion(): string {
+const version: string = (() => {
   try {
     const pkg = JSON.parse(readFileSync(join(__dirname, '../package.json'), 'utf8'));
     return pkg.version ?? 'unknown';
   } catch {
     return 'unknown';
   }
-}
+})();
 
 export async function main(
   argv: string[],
@@ -125,26 +125,25 @@ function boxLine(content: string, innerWidth: number): string {
 
 function printHelp(): void {
   const confPath = getConfigPath();
-  const version = getVersion();
   const BOX_INNER_WIDTH = 45;
+  const JSON_BOX_INNER_WIDTH = 50;
 
-  // 标题框
+  const titleText = chalk.bold('Claude Model Switcher') + ' ' + chalk.dim(`v${version}`);
+  const titlePadding = padDisplayWidth('', BOX_INNER_WIDTH - stringWidth(titleText) - 2);
+
   console.log();
   console.log(chalk.cyan('╭' + '─'.repeat(BOX_INNER_WIDTH) + '╮'));
-  console.log(chalk.cyan('│') + ' ' + chalk.bold('Claude Model Switcher') + ' ' + chalk.dim(`v${version}`) + padDisplayWidth('', BOX_INNER_WIDTH - stringWidth(' Claude Model Switcher ') - stringWidth(`v${version}`) - 1) + chalk.cyan('│'));
+  console.log(chalk.cyan('│') + ' ' + titleText + titlePadding + chalk.cyan('│'));
   console.log(boxLine('在多个 Claude API Provider 之间快速切换', BOX_INNER_WIDTH));
   console.log(chalk.cyan('╰' + '─'.repeat(BOX_INNER_WIDTH) + '╯'));
   console.log();
 
-  // 配置文件路径
   console.log('  📂 ' + chalk.bold('配置文件路径（根据当前系统自动检测）'));
   console.log('    ' + chalk.cyan(confPath));
   console.log(chalk.dim('    macOS / Linux: $XDG_CONFIG_HOME/claude-model-switcher/providers.json'));
   console.log(chalk.dim('    Windows: %APPDATA%\\claude-model-switcher\\providers.json'));
   console.log();
 
-  // 配置文件格式（JSON 框）
-  const JSON_BOX_INNER_WIDTH = 50;
   console.log('  📋 ' + chalk.bold('配置文件格式 (JSON 数组)'));
   console.log(chalk.dim('  ┌' + '─'.repeat(JSON_BOX_INNER_WIDTH) + '┐'));
   console.log(boxLine('[', JSON_BOX_INNER_WIDTH));
@@ -159,13 +158,11 @@ function printHelp(): void {
   console.log(chalk.dim('  └' + '─'.repeat(JSON_BOX_INNER_WIDTH) + '┘'));
   console.log();
 
-  // API Key 设置
   console.log('  🔑 ' + chalk.bold('API Key 设置'));
   console.log(chalk.dim('  将你的 API Key 设置为环境变量（添加到 ~/.zshrc 或 ~/.bashrc）：'));
   console.log('    ' + chalk.yellow('export EXAMPLE_API_KEY="your-key-here"'));
   console.log();
 
-  // 使用示例
   console.log('  🚀 ' + chalk.bold('使用示例'));
   console.log(`    ${chalk.cyan('ccs')}` + '                          使用默认 provider 的默认模型');
   console.log(`    ${chalk.cyan('ccs @zhipu')}` + '                   使用 zhipu 的默认模型');
