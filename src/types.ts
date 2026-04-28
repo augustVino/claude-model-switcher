@@ -13,6 +13,7 @@ export interface ParsedArgs {
   rest: string[];
   isListCommand: boolean;
   isHelpCommand: boolean;
+  isInitCommand: boolean;
 }
 
 export interface ResolvedConfig {

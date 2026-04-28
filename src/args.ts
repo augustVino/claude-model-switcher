@@ -30,5 +30,5 @@ export function parseArgs(argv: string[]): ParsedArgs {
     }
   }
 
-  return { provider, model, rest, isListCommand, isHelpCommand };
+  return { provider, model, rest, isListCommand, isHelpCommand, isInitCommand: false };
 }
