@@ -25,15 +25,16 @@ export async function initConfig(configPath: string): Promise<void> {
   // File exists — validate
   try {
     readConfig(configPath);
-    process.stdout.write(`✓ Config file already exists: ${configPath}\n`);
-    process.exit(0);
   } catch (e) {
     if (e instanceof ConfigError) {
       process.stderr.write(`! Existing config appears invalid: ${e.message}\n`);
       process.stderr.write(`  Please fix or remove the file before running @init again.\n`);
     } else {
-      process.stderr.write(`! Error reading config: ${(e as Error).message}\n`);
+      process.stderr.write(`! Config exists but could not be validated.\n`);
     }
     process.exit(1);
   }
+
+  process.stdout.write(`✓ Config file already exists: ${configPath}\n`);
+  process.exit(0);
 }

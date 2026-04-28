@@ -48,6 +48,8 @@ export function readConfig(configPath: string): Provider[] {
     throw new ConfigError(`No providers configured in ${configPath}`);
   }
 
+  const RESERVED_NAMES = new Set(['list', 'help', 'init']);
+
   const entries = parsed as RawEntry[];
   for (const p of entries) {
     if (typeof p !== 'object' || p === null) {
@@ -60,19 +62,9 @@ export function readConfig(configPath: string): Provider[] {
         );
       }
     }
-    if (p['name'] === 'list') {
+    if (RESERVED_NAMES.has(p['name'] as string)) {
       throw new ConfigError(
-        `Provider name "list" is reserved (@list is a built-in command)`
-      );
-    }
-    if (p['name'] === 'help') {
-      throw new ConfigError(
-        `Provider name "help" is reserved (@help is a built-in command)`
-      );
-    }
-    if (p['name'] === 'init') {
-      throw new ConfigError(
-        `Provider name "init" is reserved (@init is a built-in command)`
+        `Provider name "${p['name']}" is reserved (@${p['name']} is a built-in command)`
       );
     }
   }

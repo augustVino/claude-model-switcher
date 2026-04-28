@@ -1,4 +1,4 @@
-import { describe, expect, it, beforeEach, spyOn } from 'bun:test';
+import { describe, expect, it, beforeEach, afterEach, spyOn } from 'bun:test';
 import { initConfig } from '../src/init';
 import { existsSync, mkdirSync, writeFileSync, readFileSync } from 'node:fs';
 import { mkdtemp } from 'node:fs/promises';
@@ -11,11 +11,20 @@ class ExitCaptureError extends Error {
 
 let capturedExitCode: number | null = null;
 let tmpDir: string;
+let exitSpy: ReturnType<typeof spyOn>;
+let stdoutSpy: ReturnType<typeof spyOn>;
+let stderrSpy: ReturnType<typeof spyOn>;
 
 beforeEach(async () => {
   capturedExitCode = null;
   tmpDir = await mkdtemp(join(tmpdir(), 'cms-init-test-'));
-  spyOn(process, 'exit').mockImplementation((code?: number) => { capturedExitCode = code ?? 1; throw new ExitCaptureError(); });
+  exitSpy = spyOn(process, 'exit').mockImplementation((code?: number) => { capturedExitCode = code ?? 1; throw new ExitCaptureError(); });
+});
+
+afterEach(() => {
+  exitSpy.mockRestore();
+  stdoutSpy?.mockRestore();
+  stderrSpy?.mockRestore();
 });
 
 async function runInit(configPath: string): Promise<void> {
@@ -32,7 +41,7 @@ describe('initConfig', () => {
     const configPath = join(tmpDir, 'claude-model-switcher', 'providers.json');
 
     let stdoutMsg = '';
-    spyOn(process.stdout, 'write').mockImplementation((msg: string) => { stdoutMsg += msg; return true; });
+    stdoutSpy = spyOn(process.stdout, 'write').mockImplementation((msg: string) => { stdoutMsg += msg; return true; });
 
     await runInit(configPath);
 
@@ -63,7 +72,7 @@ describe('initConfig', () => {
     }]), 'utf8');
 
     let stdoutMsg = '';
-    spyOn(process.stdout, 'write').mockImplementation((msg: string) => { stdoutMsg += msg; return true; });
+    stdoutSpy = spyOn(process.stdout, 'write').mockImplementation((msg: string) => { stdoutMsg += msg; return true; });
 
     await runInit(configPath);
 
@@ -79,7 +88,7 @@ describe('initConfig', () => {
     writeFileSync(configPath, 'not valid json', 'utf8');
 
     let stderrMsg = '';
-    spyOn(process.stderr, 'write').mockImplementation((msg: string) => { stderrMsg += msg; return true; });
+    stderrSpy = spyOn(process.stderr, 'write').mockImplementation((msg: string) => { stderrMsg += msg; return true; });
 
     await runInit(configPath);
 
