@@ -1,4 +1,4 @@
-import { describe, expect, it, beforeEach, afterEach, spyOn } from 'bun:test';
+import { describe, expect, it, beforeEach, spyOn } from 'bun:test';
 import { initConfig } from '../src/init';
 import { existsSync, mkdirSync, writeFileSync, readFileSync } from 'node:fs';
 import { mkdtemp } from 'node:fs/promises';
@@ -15,7 +15,6 @@ let tmpDir: string;
 beforeEach(async () => {
   capturedExitCode = null;
   tmpDir = await mkdtemp(join(tmpdir(), 'cms-init-test-'));
-  // @ts-expect-error
   spyOn(process, 'exit').mockImplementation((code?: number) => { capturedExitCode = code ?? 1; throw new ExitCaptureError(); });
 });
 
