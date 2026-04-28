@@ -211,4 +211,24 @@ describe('main', () => {
 
     expect(capturedExitCode).toBe(1);
   });
+
+  it('calls initConfig for @init and exits with code 0 without spawning', async () => {
+    // Use empty XDG_CONFIG_HOME — no config file exists
+    const emptyDir = join(getTmpDir(), 'empty-init');
+    const { mkdir: mk } = await import('node:fs/promises');
+    await mk(emptyDir, { recursive: true });
+    process.env.XDG_CONFIG_HOME = emptyDir;
+
+    let spawned = false;
+    const noSpawnMock = function (): ChildProcess { spawned = true; return { on() { return this; } } as unknown as ChildProcess; };
+    await runMain(['@init'], noSpawnMock);
+
+    expect(spawned).toBe(false);
+    expect(capturedExitCode).toBe(0);
+
+    // Verify the config file was actually created
+    const configPath = join(emptyDir, 'claude-model-switcher', 'providers.json');
+    const { existsSync } = await import('node:fs');
+    expect(existsSync(configPath)).toBe(true);
+  });
 });

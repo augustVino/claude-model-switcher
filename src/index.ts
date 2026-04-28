@@ -33,6 +33,13 @@ export async function main(
     process.exit(0);
   }
 
+  if (args.isInitCommand) {
+    const { initConfig } = await import('./init');
+    const confPath = getConfigPath();
+    await initConfig(confPath);
+    return;
+  }
+
   const confPath = getConfigPath();
 
   let providers: Provider[];
