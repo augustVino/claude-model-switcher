@@ -70,6 +70,11 @@ export function readConfig(configPath: string): Provider[] {
         `Provider name "help" is reserved (@help is a built-in command)`
       );
     }
+    if (p['name'] === 'init') {
+      throw new ConfigError(
+        `Provider name "init" is reserved (@init is a built-in command)`
+      );
+    }
   }
 
   return entries as unknown as Provider[];
