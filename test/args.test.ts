@@ -47,4 +47,13 @@ describe('parseArgs', () => {
     expect(result.model).toBe('');
     expect(result.rest).toEqual([]);
   });
+
+  it('detects @help command', () => {
+    const result = parseArgs(['@help']);
+    expect(result.isHelpCommand).toBe(true);
+    expect(result.provider).toBe('');
+    expect(result.model).toBe('');
+    expect(result.rest).toEqual([]);
+    expect(result.isListCommand).toBe(false);
+  });
 });

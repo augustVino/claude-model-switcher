@@ -12,6 +12,7 @@ export interface ParsedArgs {
   model: string;
   rest: string[];
   isListCommand: boolean;
+  isHelpCommand: boolean;
 }
 
 export interface ResolvedConfig {
