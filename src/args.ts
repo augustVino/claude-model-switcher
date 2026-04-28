@@ -6,6 +6,7 @@ export function parseArgs(argv: string[]): ParsedArgs {
   const rest: string[] = [];
   let isListCommand = false;
   let isHelpCommand = false;
+  let isInitCommand = false;
 
   for (const arg of argv) {
     if (arg.startsWith('@') && !provider) {
@@ -16,6 +17,10 @@ export function parseArgs(argv: string[]): ParsedArgs {
       }
       if (raw === 'help') {
         isHelpCommand = true;
+        continue;
+      }
+      if (raw === 'init') {
+        isInitCommand = true;
         continue;
       }
       const colonIdx = raw.indexOf(':');
@@ -30,5 +35,5 @@ export function parseArgs(argv: string[]): ParsedArgs {
     }
   }
 
-  return { provider, model, rest, isListCommand, isHelpCommand, isInitCommand: false };
+  return { provider, model, rest, isListCommand, isHelpCommand, isInitCommand };
 }

@@ -56,4 +56,14 @@ describe('parseArgs', () => {
     expect(result.rest).toEqual([]);
     expect(result.isListCommand).toBe(false);
   });
+
+  it('detects @init command', () => {
+    const result = parseArgs(['@init']);
+    expect(result.isInitCommand).toBe(true);
+    expect(result.provider).toBe('');
+    expect(result.model).toBe('');
+    expect(result.rest).toEqual([]);
+    expect(result.isListCommand).toBe(false);
+    expect(result.isHelpCommand).toBe(false);
+  });
 });
