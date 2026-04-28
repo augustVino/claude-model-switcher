@@ -1,16 +1,38 @@
+import chalk from 'chalk';
+import stringWidth from 'string-width';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+
 import { getConfigPath, readConfig, ConfigError } from './config';
 import { parseArgs } from './args';
 import { resolveProvider } from './provider';
 import { listProviders } from './list';
 import type { Provider, ResolvedConfig } from './types';
-import { dirname } from 'node:path';
+import { dirname, join } from 'node:path';
 import { spawn, type SpawnOptions } from 'node:child_process';
 import type { ChildProcess } from 'node:child_process';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+function getVersion(): string {
+  try {
+    const pkg = JSON.parse(readFileSync(join(__dirname, '../package.json'), 'utf8'));
+    return pkg.version ?? 'unknown';
+  } catch {
+    return 'unknown';
+  }
+}
 
 export async function main(
   argv: string[],
   spawnFn: typeof spawn = spawn
 ): Promise<void> {
+  const args = parseArgs(argv);
+
+  if (args.isHelpCommand) {
+    printHelp();
+    process.exit(0);
+  }
+
   const confPath = getConfigPath();
 
   let providers: Provider[];
@@ -24,8 +46,6 @@ export async function main(
     }
     process.exit(1);
   }
-
-  const args = parseArgs(argv);
 
   if (args.isListCommand) {
     listProviders(providers);
@@ -89,4 +109,68 @@ function printConfigNotFoundHint(confPath: string, err: Error): void {
   process.stderr.write('  ]\n');
   process.stderr.write('  EOF\n\n');
   process.stderr.write('  export MY_API_KEY="your-api-key"\n');
+}
+
+/** Pad a string to target display width, accounting for CJK double-width characters. */
+function padDisplayWidth(str: string, targetWidth: number): string {
+  const current = stringWidth(str);
+  if (current >= targetWidth) return str;
+  return str + ' '.repeat(targetWidth - current);
+}
+
+/** Draw a box line with │ borders, content padded to inner width. */
+function boxLine(content: string, innerWidth: number): string {
+  return chalk.dim('│ ') + padDisplayWidth(content, innerWidth) + chalk.dim(' │');
+}
+
+function printHelp(): void {
+  const confPath = getConfigPath();
+  const version = getVersion();
+  const BOX_INNER_WIDTH = 45;
+
+  // 标题框
+  console.log();
+  console.log(chalk.cyan('╭' + '─'.repeat(BOX_INNER_WIDTH) + '╮'));
+  console.log(chalk.cyan('│') + ' ' + chalk.bold('Claude Model Switcher') + ' ' + chalk.dim(`v${version}`) + padDisplayWidth('', BOX_INNER_WIDTH - stringWidth(' Claude Model Switcher ') - stringWidth(`v${version}`) - 1) + chalk.cyan('│'));
+  console.log(boxLine('在多个 Claude API Provider 之间快速切换', BOX_INNER_WIDTH));
+  console.log(chalk.cyan('╰' + '─'.repeat(BOX_INNER_WIDTH) + '╯'));
+  console.log();
+
+  // 配置文件路径
+  console.log('  📂 ' + chalk.bold('配置文件路径（根据当前系统自动检测）'));
+  console.log('    ' + chalk.cyan(confPath));
+  console.log(chalk.dim('    macOS / Linux: $XDG_CONFIG_HOME/claude-model-switcher/providers.json'));
+  console.log(chalk.dim('    Windows: %APPDATA%\\claude-model-switcher\\providers.json'));
+  console.log();
+
+  // 配置文件格式（JSON 框）
+  const JSON_BOX_INNER_WIDTH = 50;
+  console.log('  📋 ' + chalk.bold('配置文件格式 (JSON 数组)'));
+  console.log(chalk.dim('  ┌' + '─'.repeat(JSON_BOX_INNER_WIDTH) + '┐'));
+  console.log(boxLine('[', JSON_BOX_INNER_WIDTH));
+  console.log(boxLine('  {', JSON_BOX_INNER_WIDTH));
+  console.log(boxLine('    "name": "' + chalk.green('example-provider') + '",          ' + chalk.dim('← @ 引用名'), JSON_BOX_INNER_WIDTH));
+  console.log(boxLine('    "base_url": "' + chalk.green('https://...') + '",             ' + chalk.dim('← API 地址'), JSON_BOX_INNER_WIDTH));
+  console.log(boxLine('    "api_key_env": "' + chalk.green('EXAMPLE_API_KEY') + '",     ' + chalk.dim('← 环境变量名'), JSON_BOX_INNER_WIDTH));
+  console.log(boxLine('    "default_model": "model-name",            ' + chalk.dim('← 可选'), JSON_BOX_INNER_WIDTH));
+  console.log(boxLine('    "models": ["model-1", "model-2"]         ' + chalk.dim('← 可选'), JSON_BOX_INNER_WIDTH));
+  console.log(boxLine('  }', JSON_BOX_INNER_WIDTH));
+  console.log(boxLine(']', JSON_BOX_INNER_WIDTH));
+  console.log(chalk.dim('  └' + '─'.repeat(JSON_BOX_INNER_WIDTH) + '┘'));
+  console.log();
+
+  // API Key 设置
+  console.log('  🔑 ' + chalk.bold('API Key 设置'));
+  console.log(chalk.dim('  将你的 API Key 设置为环境变量（添加到 ~/.zshrc 或 ~/.bashrc）：'));
+  console.log('    ' + chalk.yellow('export EXAMPLE_API_KEY="your-key-here"'));
+  console.log();
+
+  // 使用示例
+  console.log('  🚀 ' + chalk.bold('使用示例'));
+  console.log(`    ${chalk.cyan('ccs')}` + '                          使用默认 provider 的默认模型');
+  console.log(`    ${chalk.cyan('ccs @zhipu')}` + '                   使用 zhipu 的默认模型');
+  console.log(`    ${chalk.cyan('ccs @zhipu:glm-4.6')}` + '           使用 zhipu 的指定模型');
+  console.log(`    ${chalk.cyan('ccs @list')}` + '                     列出所有已配置的 provider');
+  console.log(`    ${chalk.cyan('ccs @help')}` + '                     显示本帮助信息');
+  console.log();
 }
