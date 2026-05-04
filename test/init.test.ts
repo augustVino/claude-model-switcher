@@ -92,6 +92,7 @@ describe('initConfig', () => {
 
     await runInit(configPath);
 
+    expect(stderrMsg).toContain('✗');
     expect(stderrMsg).toContain('invalid');
     expect(capturedExitCode).toBe(1);
   });

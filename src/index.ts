@@ -1,6 +1,7 @@
 import chalk from 'chalk';
 import stringWidth from 'string-width';
 import { readFileSync } from 'node:fs';
+import { padDisplayWidth, boxLine } from './box';
 import { fileURLToPath } from 'node:url';
 
 import { getConfigPath, readConfig, ConfigError } from './config';
@@ -49,7 +50,7 @@ export async function main(
     if (e instanceof ConfigError) {
       printConfigNotFoundHint(confPath, e);
     } else {
-      process.stderr.write(`Error: ${(e as Error).message}\n`);
+      process.stderr.write(chalk.red(`Error: ${(e as Error).message}\n`));
     }
     process.exit(1);
   }
@@ -62,7 +63,7 @@ export async function main(
   for (const a of args.rest) {
     if (a === '--model' || a.startsWith('--model=')) {
       process.stderr.write(
-        `Warning: --model flag conflicts with @${args.provider}. The --model value will override the provider setting.\n`
+        chalk.yellow('Warning:') + ` --model flag conflicts with @${args.provider}. The --model value will override the provider setting.\n`
       );
       break;
     }
@@ -72,7 +73,7 @@ export async function main(
   try {
     config = resolveProvider(providers, args);
   } catch (e) {
-    process.stderr.write(`Error: ${(e as Error).message}\n`);
+    process.stderr.write(chalk.red('Error: ') + colorizeError((e as Error).message) + '\n');
     process.exit(1);
   }
 
@@ -93,7 +94,7 @@ export async function main(
 
   const child = spawnFn('claude', args.rest, spawnOptions) as ChildProcess;
   child.on('error', (err: Error) => {
-    process.stderr.write(`Error: Failed to launch claude: ${err.message}\n`);
+    process.stderr.write(chalk.red(`Error: Failed to launch claude: ${err.message}\n`));
     process.exit(1);
   });
   child.on('close', (code: number | null) => {
@@ -101,33 +102,35 @@ export async function main(
   });
 }
 
+function colorizeError(message: string): string {
+  const idx = message.indexOf('Available:\n');
+  if (idx === -1) {
+    return chalk.red(message);
+  }
+  const header = message.slice(0, idx);
+  const list = message.slice(idx + 'Available:\n'.length);
+  const items = list.split('\n').map(line => {
+    if (line.trim().startsWith('@')) return chalk.cyan(line);
+    return line;
+  });
+  return chalk.red(header) + chalk.dim('Available:\n') + items.join('\n');
+}
+
 function printConfigNotFoundHint(confPath: string, err: Error): void {
-  process.stderr.write(`Error: ${err.message}\n\n`);
-  process.stderr.write('Quick setup:\n\n');
-  process.stderr.write(`  mkdir -p '${dirname(confPath)}'\n`);
-  process.stderr.write(`  cat > '${confPath}' << 'EOF'\n`);
-  process.stderr.write('  [\n');
-  process.stderr.write('    {\n');
-  process.stderr.write('      "name": "my-provider",\n');
-  process.stderr.write('      "base_url": "https://your-api-endpoint/anthropic",\n');
-  process.stderr.write('      "api_key_env": "MY_API_KEY",\n');
-  process.stderr.write('      "default_model": "model-name"\n');
-  process.stderr.write('    }\n');
-  process.stderr.write('  ]\n');
-  process.stderr.write('  EOF\n\n');
-  process.stderr.write('  export MY_API_KEY="your-api-key"\n');
-}
-
-/** Pad a string to target display width, accounting for CJK double-width characters. */
-function padDisplayWidth(str: string, targetWidth: number): string {
-  const current = stringWidth(str);
-  if (current >= targetWidth) return str;
-  return str + ' '.repeat(targetWidth - current);
-}
-
-/** Draw a box line with │ borders, content padded to inner width. */
-function boxLine(content: string, innerWidth: number): string {
-  return chalk.dim('│ ') + padDisplayWidth(content, innerWidth) + chalk.dim(' │');
+  process.stderr.write(chalk.red(`Error: ${err.message}\n\n`));
+  process.stderr.write(chalk.bold('Quick setup:\n\n'));
+  process.stderr.write(chalk.dim(`  mkdir -p '${dirname(confPath)}'\n`));
+  process.stderr.write(chalk.dim(`  cat > '${confPath}' << 'EOF'\n`));
+  process.stderr.write(chalk.dim('  [\n'));
+  process.stderr.write(chalk.dim('    {\n'));
+  process.stderr.write(chalk.dim(`      "name": "my-provider",\n`));
+  process.stderr.write(chalk.dim(`      "base_url": "https://your-api-endpoint/anthropic",\n`));
+  process.stderr.write(chalk.dim(`      "api_key_env": "MY_API_KEY",\n`));
+  process.stderr.write(chalk.dim(`      "default_model": "model-name"\n`));
+  process.stderr.write(chalk.dim('    }\n'));
+  process.stderr.write(chalk.dim('  ]\n'));
+  process.stderr.write(chalk.dim('  EOF\n\n'));
+  process.stderr.write(chalk.yellow('  export MY_API_KEY="your-api-key"\n'));
 }
 
 function printHelp(): void {

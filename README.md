@@ -19,7 +19,7 @@ ccs                      # 用默认 provider（配置文件第一个）
 ## 安装
 
 ```bash
-npm install -g git+ssh://git@github.com:user/claude-model-switcher.git
+npm install -g git+ssh://git@github.com:augustVino/claude-model-switcher.git
 ```
 
 > **注意：** 本工具运行时依赖 [Bun](https://bun.sh/)（>= 1.0），安装前请确保已安装 Bun。
@@ -48,7 +48,7 @@ cat > ~/.config/claude-model-switcher/providers.json << 'EOF'
   },
   {
     "name": "lp",
-    "base_url": "http://internal.company.com/api/anthropic",
+    "base_url": "http://your-company.com/api/anthropic",
     "api_key_env": "LP_API_KEY"
   }
 ]
@@ -82,8 +82,14 @@ ccs @zhipu
 ccs @zhipu:glm-4.6
 ccs @lp:qwen3-plus
 
-# 列出所有已配置的 provider 及其可用模型（树形展示）
+# 列出所有已配置的 provider 及其可用模型（box 框展示）
 ccs @list
+
+# 初始化配置文件（若不存在则创建模板，已存在则校验）
+ccs @init
+
+# 显示帮助信息
+ccs @help
 
 # 配合 Claude Code 官方参数使用（@ 参数位置灵活）
 ccs @zhipu -r sessionID
@@ -92,15 +98,17 @@ ccs -r sessionID @zhipu
 ccs @zhipu:glm-4.6 -p "hello"
 
 # @list 输出示例
-# Providers:
-#
-#   zhipu
-#     ├─ glm-4.6        [default]
-#     ├─ glm-4.5-air    [small]
-#     └─ glm-4-plus
-#
-#   lp
-#     └─ qwen3-plus     [default]
+# ╭─ Providers ────────────────────────────╮
+# │                                        │
+# │   zhipu                                │
+# │     ├─ glm-4.6          [default]      │
+# │     ├─ glm-4.5-air      [small]        │
+# │     └─ glm-4-plus                      │
+# │                                        │
+# │   lp                                   │
+# │     └─ qwen3-plus       [default]      │
+# │                                        │
+# ╰────────────────────────────────────────╯
 ```
 
 ## 配置文件格式
@@ -125,7 +133,7 @@ ccs @zhipu:glm-4.6 -p "hello"
 
 | 字段 | 必填 | 说明 |
 |------|------|------|
-| name | 是 | provider 标识，用于 `@name`，仅允许 `[a-zA-Z0-9_-]`，不可为 `list`（保留字） |
+| name | 是 | provider 标识，用于 `@name`，仅允许 `[a-zA-Z0-9_-]`，不可为 `list`、`help`、`init`（保留字） |
 | base_url | 是 | Anthropic 兼容 API 端点 |
 | api_key_env | 是 | 存放 API Key 的环境变量名 |
 | default_model | 否 | 不指定模型时的默认模型 |

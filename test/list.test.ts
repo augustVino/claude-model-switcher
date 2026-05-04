@@ -19,10 +19,14 @@ function makeProvider(overrides: Partial<Provider> & { name: string; base_url: s
 }
 
 describe('listProviders', () => {
-  it('outputs header "Providers:" with blank line after', () => {
+  it('outputs Providers in a box frame', () => {
     listProviders([makeProvider({ name: 'p', base_url: 'http://a', api_key_env: 'K', default_model: 'm1' })]);
-    expect(output).toContain('Providers:');
-    expect(output).toMatch(/Providers:\n\n/);
+    expect(output).toContain('Providers');
+    expect(output).toContain('╭');
+    expect(output).toContain('╮');
+    expect(output).toContain('╰');
+    expect(output).toContain('╯');
+    expect(output).toContain('│');
   });
 
   it('shows provider names without @ prefix', () => {
@@ -113,12 +117,17 @@ describe('listProviders', () => {
     expect(lines.length).toBeGreaterThanOrEqual(1);
   });
 
-  it('separates multiple providers with blank lines', () => {
+  it('separates multiple providers with blank lines inside box', () => {
     listProviders([
       makeProvider({ name: 'a', base_url: 'http://a', api_key_env: 'K', default_model: 'm1' }),
       makeProvider({ name: 'b', base_url: 'http://b', api_key_env: 'K', default_model: 'm2' })
     ]);
-    expect(output).toMatch(/  a\n.*\n\n\s*  b/);
+    expect(output).toContain('a');
+    expect(output).toContain('b');
+    const lines = output.split('\n').filter(l => l.trim().length > 0);
+    const aIdx = lines.findIndex(l => l.includes('a'));
+    const bIdx = lines.findIndex(l => l.includes('b'));
+    expect(bIdx - aIdx).toBeGreaterThanOrEqual(3);
   });
 
   it('excludes default_model from list when models field does not include it', () => {

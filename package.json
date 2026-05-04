@@ -1,6 +1,6 @@
 {
   "name": "@vinoorg/claude-model-switcher",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "type": "module",
   "description": "Switch AI providers in Claude Code CLI via @provider syntax",
   "bin": {
@@ -11,6 +11,14 @@
     "src/"
   ],
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/augustVino/claude-model-switcher.git"
+  },
+  "homepage": "https://github.com/augustVino/claude-model-switcher#readme",
+  "bugs": {
+    "url": "https://github.com/augustVino/claude-model-switcher/issues"
+  },
   "engines": {
     "bun": ">=1.0"
   },
