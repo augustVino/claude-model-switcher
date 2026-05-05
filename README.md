@@ -202,6 +202,14 @@ ccs @zhipu:glm-4.6 -p "hello"
 
 同时会清除 `ANTHROPIC_API_KEY`，避免与 `ANTHROPIC_AUTH_TOKEN` 冲突。
 
+## 配套状态栏
+
+搭配 [ccs-statusline](https://github.com/augustVino/ccs-statusline) 可以在 Claude Code 状态栏中实时显示当前 Provider、模型及上下文用量：
+
+```
+[v2.1.119]  ➜ my-project (main) @zhipu:glm-4.6  Ctx:45.2k/200k (22.6%)
+```
+
 ## 许可证
 
 MIT
