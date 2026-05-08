@@ -8,7 +8,8 @@
   },
   "files": [
     "bin/",
-    "src/"
+    "src/",
+    "CHANGELOG.md"
   ],
   "license": "MIT",
   "repository": {
@@ -25,10 +26,15 @@
   "scripts": {
     "test": "bun test",
     "check": "tsc --noEmit",
-    "pub": "npm publish --access public"
+    "pub": "npm publish --access public",
+    "release": "standard-version",
+    "release:minor": "standard-version --release-as minor",
+    "release:major": "standard-version --release-as major",
+    "release:patch": "standard-version --release-as patch"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
+    "standard-version": "^9.5.0",
     "typescript": "^5.7.0"
   },
   "dependencies": {
