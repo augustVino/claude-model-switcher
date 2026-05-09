@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.1.0](https://github.com/augustVino/claude-model-switcher/compare/v1.0.6...v1.1.0) (2026-05-09)
+
+
+### Features
+
+* add [@update](https://github.com/update) command parsing ([a02d394](https://github.com/augustVino/claude-model-switcher/commit/a02d3948b025d4d870e6ded70f99445791a222be))
+* add update-checker with cache and background check ([b80ce8c](https://github.com/augustVino/claude-model-switcher/commit/b80ce8ca87380508290b47663f7e7ad0e97d03cf))
+* integrate update notification and [@update](https://github.com/update) command into main ([282de22](https://github.com/augustVino/claude-model-switcher/commit/282de2222c52d1a87a0c4886aa52ff1456b2a833))
+
+
+### Bug Fixes
+
+* harden update-checker security, add version pre-check, improve test assertions ([41d283e](https://github.com/augustVino/claude-model-switcher/commit/41d283e09c048ccf52d6eaed4427cbae2fd11738))
+
 ### 1.0.6 (2026-05-08)
 
 
