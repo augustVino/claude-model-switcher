@@ -5,6 +5,8 @@ export interface Provider {
   default_model?: string;
   default_small_model?: string;
   models?: string[];
+  agent_cli?: "cc" | "codex";
+  wire_api?: string;
 }
 
 export interface ParsedArgs {
@@ -22,6 +24,9 @@ export interface ResolvedConfig {
   apiKey: string;
   model: string;
   smallModel: string;
+  agent_cli: "cc" | "codex";
+  wireApi: string;
+  apiKeyEnv: string;
 }
 
 /** Resolve the set of available models for a provider. */
