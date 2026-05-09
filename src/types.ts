@@ -14,6 +14,7 @@ export interface ParsedArgs {
   isListCommand: boolean;
   isHelpCommand: boolean;
   isInitCommand: boolean;
+  isUpdateCommand: boolean;
 }
 
 export interface ResolvedConfig {

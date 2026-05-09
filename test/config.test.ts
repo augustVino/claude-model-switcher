@@ -73,6 +73,15 @@ describe('readConfig', () => {
     }
   });
 
+  it('throws ConfigError when provider name is reserved "update"', async () => {
+    const path = join(tmpDir, 'providers.json');
+    await writeFile(path, '[{"name":"update","base_url":"http://a","api_key_env":"K"}]');
+    expect(() => readConfig(path)).toThrow(ConfigError);
+    try { readConfig(path); } catch (e) {
+      expect((e as ConfigError).message).toContain('"update" is reserved');
+    }
+  });
+
   it('returns parsed providers for valid config', async () => {
     await writeConfig(JSON.stringify([{
       name: 'zhipu',
