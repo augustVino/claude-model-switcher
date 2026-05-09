@@ -49,6 +49,7 @@ export function readConfig(configPath: string): Provider[] {
   }
 
   const RESERVED_NAMES = new Set(['list', 'help', 'init', 'update']);
+  const VALID_AGENT_CLI = new Set(['cc', 'codex']);
 
   const entries = parsed as RawEntry[];
   for (const p of entries) {
@@ -67,6 +68,23 @@ export function readConfig(configPath: string): Provider[] {
         `Provider name "${p['name']}" is reserved (@${p['name']} is a built-in command)`
       );
     }
+    if (p['agent_cli'] !== undefined && !VALID_AGENT_CLI.has(p['agent_cli'] as string)) {
+      throw new ConfigError(
+        `Provider "${p['name']}" has invalid agent_cli "${p['agent_cli']}". Must be "cc" or "codex".`
+      );
+    }
+  }
+
+  const seen = new Set<string>();
+  for (const p of entries) {
+    const cli = (p['agent_cli'] as string) || 'cc';
+    const key = `${p['name']}::${cli}`;
+    if (seen.has(key)) {
+      throw new ConfigError(
+        `Duplicate (name, agent_cli) combination: "@${p['name']}" with agent_cli="${cli}" in ${configPath}`
+      );
+    }
+    seen.add(key);
   }
 
   return entries as unknown as Provider[];

@@ -108,4 +108,52 @@ describe('readConfig', () => {
     expect(result[0].default_small_model).toBe('m2');
     expect(result[0].models).toEqual(['m1', 'm2', 'm3']);
   });
+
+  it('throws ConfigError for invalid agent_cli value', async () => {
+    const path = await writeConfig(JSON.stringify([{
+      name: 'p', base_url: 'http://a', api_key_env: 'K', agent_cli: 'invalid'
+    }]));
+    expect(() => readConfig(path)).toThrow(ConfigError);
+    try { readConfig(path); } catch (e) {
+      expect((e as ConfigError).message).toContain('agent_cli');
+    }
+  });
+
+  it('accepts valid agent_cli values "cc" and "codex"', async () => {
+    const path = await writeConfig(JSON.stringify([
+      { name: 'a', base_url: 'http://a', api_key_env: 'K', agent_cli: 'cc' },
+      { name: 'b', base_url: 'http://b', api_key_env: 'K', agent_cli: 'codex' }
+    ]));
+    const result = readConfig(path);
+    expect(result[0].agent_cli).toBe('cc');
+    expect(result[1].agent_cli).toBe('codex');
+  });
+
+  it('accepts config without agent_cli (defaults to cc)', async () => {
+    const path = await writeConfig(JSON.stringify([{
+      name: 'p', base_url: 'http://a', api_key_env: 'K'
+    }]));
+    const result = readConfig(path);
+    expect(result[0].agent_cli).toBeUndefined();
+  });
+
+  it('throws ConfigError for duplicate (name, agent_cli) combination', async () => {
+    const path = await writeConfig(JSON.stringify([
+      { name: 'zp', base_url: 'http://a', api_key_env: 'K', agent_cli: 'cc' },
+      { name: 'zp', base_url: 'http://b', api_key_env: 'K', agent_cli: 'cc' }
+    ]));
+    expect(() => readConfig(path)).toThrow(ConfigError);
+    try { readConfig(path); } catch (e) {
+      expect((e as ConfigError).message).toContain('Duplicate');
+    }
+  });
+
+  it('allows same name with different agent_cli values', async () => {
+    const path = await writeConfig(JSON.stringify([
+      { name: 'zp', base_url: 'http://a', api_key_env: 'K', agent_cli: 'cc' },
+      { name: 'zp', base_url: 'http://b', api_key_env: 'K', agent_cli: 'codex' }
+    ]));
+    const result = readConfig(path);
+    expect(result).toHaveLength(2);
+  });
 });
