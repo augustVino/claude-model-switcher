@@ -96,4 +96,15 @@ describe('initConfig', () => {
     expect(stderrMsg).toContain('invalid');
     expect(capturedExitCode).toBe(1);
   });
+
+  it('includes agent_cli field in template', async () => {
+    const configPath = join(tmpDir, 'claude-model-switcher', 'providers.json');
+    stdoutSpy = spyOn(process.stdout, 'write').mockImplementation(() => true);
+
+    await runInit(configPath);
+
+    const content = JSON.parse(readFileSync(configPath, 'utf8'));
+    expect(content[0]).toHaveProperty('agent_cli');
+    expect(content[0].agent_cli).toBe('cc');
+  });
 });

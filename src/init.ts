@@ -8,7 +8,8 @@ const CONFIG_TEMPLATE = `[
         "name": "example-provider",
         "base_url": "https://your-api-endpoint/anthropic",
         "api_key_env": "EXAMPLE_API_KEY",
-        "default_model": "model-name"
+        "default_model": "model-name",
+        "agent_cli": "cc"
     }
 ]
 `;
