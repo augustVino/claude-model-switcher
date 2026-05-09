@@ -1,7 +1,5 @@
 # Claude Model Switcher
 
-[![GitHub stars](https://img.shields.io/github/stars/augustVino/claude-model-switcher?style=social)](https://github.com/augustVino/claude-model-switcher)
-
 如果这个工具对你有帮助，欢迎到 [GitHub](https://github.com/augustVino/claude-model-switcher) 给个 ⭐，这对开发者很重要！
 
 **[English](README.md)**
@@ -74,6 +72,7 @@ ccs @zhipu                   # 指定 provider，使用默认模型
 ccs @zhipu:glm-4.6           # 指定 provider + 模型
 ccs @list                    # 列出所有 provider 及模型
 ccs @init                    # 初始化或校验配置
+ccs @update                  # 更新到最新版本
 ccs @help                    # 显示帮助信息
 
 # 配合 Claude Code 官方参数使用
@@ -93,7 +92,7 @@ ccs @lp -p "介绍一下这个项目"
 
 | 字段                | 必填 | 说明                                                                                         |
 | ------------------- | ---- | -------------------------------------------------------------------------------------------- |
-| name                | 是   | provider 标识，用于 `@name`，仅允许 `[a-zA-Z0-9_-]`，不可为 `list`、`help`、`init`（保留字） |
+| name                | 是   | provider 标识，用于 `@name`，仅允许 `[a-zA-Z0-9_-]`，不可为 `list`、`help`、`init`、`update`（保留字） |
 | base_url            | 是   | Anthropic 兼容 API 端点                                                                      |
 | api_key_env         | 是   | 存放 API Key 的环境变量名                                                                    |
 | default_model       | 否   | 不指定模型时的默认模型                                                                       |
@@ -101,6 +100,7 @@ ccs @lp -p "介绍一下这个项目"
 | models              | 否   | 可用模型列表（`string[]`）。不配置时回退显示 default_model + default_small_model             |
 
 **规则：**
+
 - 无 `@` 参数时，使用数组中第一个 provider 作为默认
 - 若 provider 未配置 `default_model`，则调用时必须指定模型（`ccs @lp:some-model`）
 - `default_small_model` 仅影响 `ANTHROPIC_SMALL_FAST_MODEL` 和 `ANTHROPIC_DEFAULT_HAIKU_MODEL`
