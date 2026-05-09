@@ -12,6 +12,7 @@ import type { Provider, ResolvedConfig } from './types';
 import { dirname, join } from 'node:path';
 import { spawn, type SpawnOptions } from 'node:child_process';
 import type { ChildProcess } from 'node:child_process';
+import { checkUpdateNotification, readCache, semverGt, PKG_NAME } from './update-checker';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const version: string = (() => {
@@ -29,6 +30,10 @@ export async function main(
 ): Promise<void> {
   const args = parseArgs(argv);
 
+  if (!args.isUpdateCommand) {
+    checkUpdateNotification(version);
+  }
+
   if (args.isHelpCommand) {
     printHelp();
     process.exit(0);
@@ -38,6 +43,26 @@ export async function main(
     const { initConfig } = await import('./init');
     const confPath = getConfigPath();
     await initConfig(confPath);
+    return;
+  }
+
+  if (args.isUpdateCommand) {
+    const cache = readCache();
+    if (cache && !semverGt(cache.latestVersion, version)) {
+      console.log(chalk.green(`已是最新版本 (${version})`));
+      process.exit(0);
+    }
+
+    const isBun = !!process.versions.bun;
+    const cmd = isBun ? 'bun' : 'npm';
+    const child = spawnFn(cmd, ['install', '-g', `${PKG_NAME}@latest`], { stdio: 'inherit', ...(process.platform === 'win32' ? { shell: true } : {}) }) as ChildProcess;
+    child.on('error', (err: Error) => {
+      process.stderr.write(chalk.red(`Error: ${err.message}\n`));
+      process.exit(1);
+    });
+    child.on('close', (code: number | null) => {
+      process.exit(code ?? 1);
+    });
     return;
   }
 
@@ -179,5 +204,6 @@ function printHelp(): void {
   console.log(`    ${chalk.cyan('ccs @zhipu:glm-4.6')}` + '           使用 zhipu 的指定模型');
   console.log(`    ${chalk.cyan('ccs @list')}` + '                     列出所有已配置的 provider');
   console.log(`    ${chalk.cyan('ccs @help')}` + '                     显示本帮助信息');
+  console.log(`    ${chalk.cyan('ccs @update')}` + '                  更新到最新版本');
   console.log();
 }

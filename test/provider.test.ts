@@ -29,7 +29,7 @@ afterEach(() => {
 
 describe('resolveProvider', () => {
   it('resolves by explicit provider name', () => {
-    const args: ParsedArgs = { provider: 'zhipu', model: '', rest: [], isListCommand: false };
+    const args: ParsedArgs = { provider: 'zhipu', model: '', rest: [], isListCommand: false, isHelpCommand: false, isInitCommand: false, isUpdateCommand: false };
     const cfg = resolveProvider(mockProviders, args);
     expect(cfg.base_url).toBe('https://z.ai/api');
     expect(cfg.model).toBe('glm-4');
@@ -37,32 +37,32 @@ describe('resolveProvider', () => {
   });
 
   it('uses first provider when no name given (empty string)', () => {
-    const args: ParsedArgs = { provider: '', model: '', rest: ['-p', 'hi'], isListCommand: false };
+    const args: ParsedArgs = { provider: '', model: '', rest: ['-p', 'hi'], isListCommand: false, isHelpCommand: false, isInitCommand: false, isUpdateCommand: false };
     const cfg = resolveProvider(mockProviders, args);
     expect(cfg.base_url).toBe('https://z.ai/api');
     expect(cfg.model).toBe('glm-4');
   });
 
   it('uses explicit model override', () => {
-    const args: ParsedArgs = { provider: 'zhipu', model: 'glm-5x1', rest: [], isListCommand: false };
+    const args: ParsedArgs = { provider: 'zhipu', model: 'glm-5x1', rest: [], isListCommand: false, isHelpCommand: false, isInitCommand: false, isUpdateCommand: false };
     const cfg = resolveProvider(mockProviders, args);
     expect(cfg.model).toBe('glm-5x1');
     expect(cfg.smallModel).toBe('glm-5x1');
   });
 
   it('throws ProviderError for unknown provider', () => {
-    const args: ParsedArgs = { provider: 'unknown', model: '', rest: [], isListCommand: false };
+    const args: ParsedArgs = { provider: 'unknown', model: '', rest: [], isListCommand: false, isHelpCommand: false, isInitCommand: false, isUpdateCommand: false };
     expect(() => resolveProvider(mockProviders, args)).toThrow(ProviderError);
   });
 
   it('throws ProviderError for invalid provider name chars', () => {
-    const args: ParsedArgs = { provider: 'bad name!', model: '', rest: [], isListCommand: false };
+    const args: ParsedArgs = { provider: 'bad name!', model: '', rest: [], isListCommand: false, isHelpCommand: false, isInitCommand: false, isUpdateCommand: false };
     expect(() => resolveProvider(mockProviders, args)).toThrow(ProviderError);
   });
 
   it('throws ProviderError when API key env var is not set', () => {
     delete process.env.TEST_KEY;
-    const args: ParsedArgs = { provider: 'zhipu', model: '', rest: [], isListCommand: false };
+    const args: ParsedArgs = { provider: 'zhipu', model: '', rest: [], isListCommand: false, isHelpCommand: false, isInitCommand: false, isUpdateCommand: false };
     expect(() => resolveProvider(mockProviders, args)).toThrow(ProviderError);
   });
 
@@ -71,7 +71,7 @@ describe('resolveProvider', () => {
       { name: 'lp', base_url: 'http://a', api_key_env: 'LP_KEY' }
     ];
     process.env.LP_KEY = 'key';
-    const args: ParsedArgs = { provider: 'lp', model: '', rest: [], isListCommand: false };
+    const args: ParsedArgs = { provider: 'lp', model: '', rest: [], isListCommand: false, isHelpCommand: false, isInitCommand: false, isUpdateCommand: false };
     expect(() => resolveProvider(noModelProviders, args)).toThrow(ProviderError);
   });
 
@@ -85,14 +85,14 @@ describe('resolveProvider', () => {
         default_small_model: 'glm-4-air'
       }
     ];
-    const args: ParsedArgs = { provider: 'zhipu', model: '', rest: [], isListCommand: false };
+    const args: ParsedArgs = { provider: 'zhipu', model: '', rest: [], isListCommand: false, isHelpCommand: false, isInitCommand: false, isUpdateCommand: false };
     const cfg = resolveProvider(providers, args);
     expect(cfg.model).toBe('glm-4');
     expect(cfg.smallModel).toBe('glm-4-air');
   });
 
   it('falls back smallModel to model when default_small_model absent', () => {
-    const args: ParsedArgs = { provider: 'zhipu', model: '', rest: [], isListCommand: false };
+    const args: ParsedArgs = { provider: 'zhipu', model: '', rest: [], isListCommand: false, isHelpCommand: false, isInitCommand: false, isUpdateCommand: false };
     const cfg = resolveProvider(mockProviders, args);
     expect(cfg.smallModel).toBe('glm-4'); // same as default_model
   });
@@ -102,7 +102,7 @@ describe('resolveProvider', () => {
       { name: 'lp', base_url: 'http://a', api_key_env: 'LP_KEY' }
     ];
     process.env.LP_KEY = 'key';
-    const args: ParsedArgs = { provider: 'lp', model: 'qwen3', rest: [], isListCommand: false };
+    const args: ParsedArgs = { provider: 'lp', model: 'qwen3', rest: [], isListCommand: false, isHelpCommand: false, isInitCommand: false, isUpdateCommand: false };
     const cfg = resolveProvider(noDefault, args);
     expect(cfg.model).toBe('qwen3');
     expect(cfg.smallModel).toBe('qwen3');

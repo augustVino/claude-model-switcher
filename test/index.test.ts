@@ -1,5 +1,6 @@
 import { describe, expect, it, beforeEach, afterEach, spyOn } from 'bun:test';
 import { main } from '../src/index';
+import { readFileSync } from 'node:fs';
 
 /** Sentinel error thrown by the process.exit mock to halt execution. */
 class ExitCaptureError extends Error {
@@ -230,5 +231,56 @@ describe('main', () => {
     const configPath = join(emptyDir, 'claude-model-switcher', 'providers.json');
     const { existsSync } = await import('node:fs');
     expect(existsSync(configPath)).toBe(true);
+  });
+
+  it('calls npm install for @update without requiring config file', async () => {
+    // @update 不依赖配置文件，使用空的 XDG_CONFIG_HOME
+    const emptyDir = join(getTmpDir(), 'empty-update');
+    const { mkdir: mk } = await import('node:fs/promises');
+    await mk(emptyDir, { recursive: true });
+    process.env.XDG_CONFIG_HOME = emptyDir;
+
+    let lastCmd = '';
+    let lastArgs: string[] = [];
+    const trackedMock = function (cmd: string, args?: string[], opts?: Record<string, unknown>): ChildProcess {
+      lastCmd = cmd;
+      lastArgs = args ?? [];
+      return {
+        on(event: string, cb: Function) {
+          if (event === 'close') cb(0);
+          return this;
+        },
+      } as unknown as ChildProcess;
+    };
+
+    await runMain(['@update'], trackedMock);
+
+    expect(['npm', 'bun']).toContain(lastCmd);
+    expect(lastArgs[0]).toBe('install');
+    expect(lastArgs[1]).toBe('-g');
+    expect(lastArgs[2]).toContain('@vinoorg/claude-model-switcher@latest');
+  });
+
+  it('skips install when already at latest version for @update', async () => {
+    const { writeFileSync: wf, mkdirSync: ms } = await import('node:fs');
+    const emptyDir = join(getTmpDir(), 'empty-update-latest');
+    ms(emptyDir, { recursive: true });
+    process.env.XDG_CONFIG_HOME = emptyDir;
+    const cacheDir = join(emptyDir, 'claude-model-switcher');
+    ms(cacheDir, { recursive: true });
+    const pkg = JSON.parse(readFileSync(join(__dirname, '../package.json'), 'utf8'));
+    wf(join(cacheDir, '.update-cache.json'), JSON.stringify({ lastCheck: Date.now(), latestVersion: pkg.version }));
+
+    let spawned = false;
+    const noSpawnMock = function (): ChildProcess { spawned = true; return { on() { return this; } } as unknown as ChildProcess; };
+    const logSpy = spyOn(console, 'log').mockImplementation(() => {});
+
+    await runMain(['@update'], noSpawnMock);
+
+    expect(spawned).toBe(false);
+    expect(capturedExitCode).toBe(0);
+    expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('已是最新版本'));
+
+    logSpy.mockRestore();
   });
 });

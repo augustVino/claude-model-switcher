@@ -66,4 +66,15 @@ describe('parseArgs', () => {
     expect(result.isListCommand).toBe(false);
     expect(result.isHelpCommand).toBe(false);
   });
+
+  it('detects @update command', () => {
+    const result = parseArgs(['@update']);
+    expect(result.isUpdateCommand).toBe(true);
+    expect(result.provider).toBe('');
+    expect(result.model).toBe('');
+    expect(result.rest).toEqual([]);
+    expect(result.isListCommand).toBe(false);
+    expect(result.isHelpCommand).toBe(false);
+    expect(result.isInitCommand).toBe(false);
+  });
 });
