@@ -107,4 +107,50 @@ describe('resolveProvider', () => {
     expect(cfg.model).toBe('qwen3');
     expect(cfg.smallModel).toBe('qwen3');
   });
+
+  const FULL_ARGS: Omit<ParsedArgs, 'provider' | 'model' | 'rest'> = {
+    isListCommand: false, isHelpCommand: false, isInitCommand: false, isUpdateCommand: false,
+  };
+
+  it('returns agent_cli "cc" when set on provider', () => {
+    const providers: Provider[] = [
+      { name: 'zp', base_url: 'https://z.ai/api', api_key_env: 'TEST_KEY', default_model: 'glm-4', agent_cli: 'cc' }
+    ];
+    const args: ParsedArgs = { provider: 'zp', model: '', rest: [], ...FULL_ARGS };
+    const cfg = resolveProvider(providers, args);
+    expect(cfg.agent_cli).toBe('cc');
+  });
+
+  it('returns agent_cli "codex" when set on provider', () => {
+    const providers: Provider[] = [
+      { name: 'zp-codex', base_url: 'https://z.ai/api/v1', api_key_env: 'TEST_KEY', default_model: 'glm-4', agent_cli: 'codex' }
+    ];
+    const args: ParsedArgs = { provider: 'zp-codex', model: '', rest: [], ...FULL_ARGS };
+    const cfg = resolveProvider(providers, args);
+    expect(cfg.agent_cli).toBe('codex');
+  });
+
+  it('defaults agent_cli to "cc" when not set', () => {
+    const args: ParsedArgs = { provider: 'zhipu', model: '', rest: [], ...FULL_ARGS };
+    const cfg = resolveProvider(mockProviders, args);
+    expect(cfg.agent_cli).toBe('cc');
+  });
+
+  it('returns wireApi when set on provider', () => {
+    const providers: Provider[] = [
+      { name: 'zp-codex', base_url: 'https://z.ai/api/v1', api_key_env: 'TEST_KEY', default_model: 'glm-4', agent_cli: 'codex', wire_api: 'chat' }
+    ];
+    const args: ParsedArgs = { provider: 'zp-codex', model: '', rest: [], ...FULL_ARGS };
+    const cfg = resolveProvider(providers, args);
+    expect(cfg.wireApi).toBe('chat');
+  });
+
+  it('defaults wireApi to empty string when not set', () => {
+    const providers: Provider[] = [
+      { name: 'zp-codex', base_url: 'https://z.ai/api/v1', api_key_env: 'TEST_KEY', default_model: 'glm-4', agent_cli: 'codex' }
+    ];
+    const args: ParsedArgs = { provider: 'zp-codex', model: '', rest: [], ...FULL_ARGS };
+    const cfg = resolveProvider(providers, args);
+    expect(cfg.wireApi).toBe('');
+  });
 });

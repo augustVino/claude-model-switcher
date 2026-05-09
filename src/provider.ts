@@ -53,5 +53,13 @@ export function resolveProvider(
     );
   }
 
-  return { base_url: pc.base_url, apiKey, model, smallModel };
+  return {
+    base_url: pc.base_url,
+    apiKey,
+    model,
+    smallModel,
+    agent_cli: pc.agent_cli || 'cc',
+    wireApi: pc.wire_api || '',
+    apiKeyEnv: pc.api_key_env,
+  };
 }
