@@ -283,4 +283,145 @@ describe('main', () => {
 
     logSpy.mockRestore();
   });
+
+  it('spawns codex with -c flags after user args for agent_cli "codex"', async () => {
+    await writeConfig(JSON.stringify([{
+      name: 'zp-codex',
+      base_url: 'https://open.bigmodel.cn/api/v1',
+      api_key_env: 'TEST_KEY',
+      default_model: 'glm-5.1',
+      agent_cli: 'codex'
+    }]));
+    process.env.TEST_KEY = 'secret-key';
+
+    const mockFn = mockSpawnClose(0);
+    await runMain(['@zp-codex'], mockFn);
+
+    const call = (mockFn as any).__lastCall();
+    expect(call.cmd).toBe('codex');
+    expect(call.args).toEqual([
+      '-c', 'model_provider="_ccs"',
+      '-c', 'model="glm-5.1"',
+      '-c', 'model_providers._ccs.base_url="https://open.bigmodel.cn/api/v1"',
+      '-c', 'model_providers._ccs.env_key="TEST_KEY"',
+    ]);
+  });
+
+  it('spawns codex with user args before -c flags', async () => {
+    await writeConfig(JSON.stringify([{
+      name: 'zp-codex',
+      base_url: 'https://open.bigmodel.cn/api/v1',
+      api_key_env: 'TEST_KEY',
+      default_model: 'glm-5.1',
+      agent_cli: 'codex'
+    }]));
+    process.env.TEST_KEY = 'secret-key';
+
+    const mockFn = mockSpawnClose(0);
+    await runMain(['@zp-codex', 'resume', '--last'], mockFn);
+
+    const call = (mockFn as any).__lastCall();
+    expect(call.cmd).toBe('codex');
+    expect(call.args[0]).toBe('resume');
+    expect(call.args[1]).toBe('--last');
+    expect(call.args[2]).toBe('-c');
+  });
+
+  it('includes wire_api in -c flags when configured', async () => {
+    await writeConfig(JSON.stringify([{
+      name: 'zp-codex',
+      base_url: 'https://open.bigmodel.cn/api/v1',
+      api_key_env: 'TEST_KEY',
+      default_model: 'glm-5.1',
+      agent_cli: 'codex',
+      wire_api: 'chat'
+    }]));
+    process.env.TEST_KEY = 'secret-key';
+
+    const mockFn = mockSpawnClose(0);
+    await runMain(['@zp-codex'], mockFn);
+
+    const call = (mockFn as any).__lastCall();
+    expect(call.args).toContain('model_providers._ccs.wire_api="chat"');
+  });
+
+  it('does not set ANTHROPIC env vars for codex provider', async () => {
+    await writeConfig(JSON.stringify([{
+      name: 'zp-codex',
+      base_url: 'https://open.bigmodel.cn/api/v1',
+      api_key_env: 'TEST_KEY',
+      default_model: 'glm-5.1',
+      agent_cli: 'codex'
+    }]));
+    process.env.TEST_KEY = 'secret-key';
+
+    const mockFn = mockSpawnClose(0);
+    await runMain(['@zp-codex'], mockFn);
+
+    expect(process.env.ANTHROPIC_BASE_URL).toBeUndefined();
+    expect(process.env.ANTHROPIC_AUTH_TOKEN).toBeUndefined();
+    expect(process.env.ANTHROPIC_MODEL).toBeUndefined();
+  });
+
+  it('shows error when codex binary not found', async () => {
+    await writeConfig(JSON.stringify([{
+      name: 'zp-codex',
+      base_url: 'https://open.bigmodel.cn/api/v1',
+      api_key_env: 'TEST_KEY',
+      default_model: 'glm-5.1',
+      agent_cli: 'codex'
+    }]));
+    process.env.TEST_KEY = 'secret-key';
+
+    const errorMock = function (): ChildProcess {
+      return {
+        on(event: string, cb: Function) {
+          if (event === 'error') cb(new Error('spawn codex ENOENT'));
+          return this;
+        },
+      } as unknown as ChildProcess;
+    };
+
+    const stderrSpy = spyOn(process.stderr, 'write').mockImplementation(() => true as any);
+    await runMain(['@zp-codex'], errorMock);
+
+    expect(stderrSpy).toHaveBeenCalledWith(expect.stringContaining('codex'));
+    expect(capturedExitCode).toBe(1);
+
+    stderrSpy.mockRestore();
+  });
+
+  it('ccs path still sets ANTHROPIC env vars for agent_cli "cc"', async () => {
+    await writeConfig(JSON.stringify([{
+      name: 'zp',
+      base_url: 'https://open.bigmodel.cn/api/anthropic',
+      api_key_env: 'TEST_KEY',
+      default_model: 'glm-5.1',
+      agent_cli: 'cc'
+    }]));
+    process.env.TEST_KEY = 'secret-key';
+
+    const mockFn = mockSpawnClose(0);
+    await runMain(['@zp'], mockFn);
+
+    expect(process.env.ANTHROPIC_BASE_URL).toBe('https://open.bigmodel.cn/api/anthropic');
+    expect(process.env.ANTHROPIC_MODEL).toBe('glm-5.1');
+    expect((mockFn as any).__lastCall().cmd).toBe('claude');
+  });
+
+  it('ccs path works without agent_cli field (backward compatible)', async () => {
+    await writeConfig(JSON.stringify([{
+      name: 'zp',
+      base_url: 'https://open.bigmodel.cn/api/anthropic',
+      api_key_env: 'TEST_KEY',
+      default_model: 'glm-5.1'
+    }]));
+    process.env.TEST_KEY = 'secret-key';
+
+    const mockFn = mockSpawnClose(0);
+    await runMain(['@zp'], mockFn);
+
+    expect((mockFn as any).__lastCall().cmd).toBe('claude');
+    expect(process.env.ANTHROPIC_MODEL).toBe('glm-5.1');
+  });
 });

@@ -102,26 +102,47 @@ export async function main(
     process.exit(1);
   }
 
-  delete process.env.ANTHROPIC_API_KEY;
-  process.env.ANTHROPIC_BASE_URL = config.base_url;
-  process.env.ANTHROPIC_AUTH_TOKEN = config.apiKey;
-  process.env.ANTHROPIC_MODEL = config.model;
-  process.env.ANTHROPIC_SMALL_FAST_MODEL = config.smallModel;
-  process.env.ANTHROPIC_REASONING_MODEL = config.model;
-  process.env.ANTHROPIC_DEFAULT_OPUS_MODEL = config.model;
-  process.env.ANTHROPIC_DEFAULT_SONNET_MODEL = config.model;
-  process.env.ANTHROPIC_DEFAULT_HAIKU_MODEL = config.smallModel;
-
   const spawnOptions: SpawnOptions = { stdio: 'inherit' };
   if (process.platform === 'win32') {
     spawnOptions.shell = true;
   }
 
-  const child = spawnFn('claude', args.rest, spawnOptions) as ChildProcess;
-  child.on('error', (err: Error) => {
-    process.stderr.write(chalk.red(`Error: Failed to launch claude: ${err.message}\n`));
-    process.exit(1);
-  });
+  let child: ChildProcess;
+
+  if (config.agent_cli === 'codex') {
+    const ccsFlags: string[] = [
+      '-c', 'model_provider="_ccs"',
+      '-c', `model="${config.model}"`,
+      '-c', `model_providers._ccs.base_url="${config.base_url}"`,
+      '-c', `model_providers._ccs.env_key="${config.apiKeyEnv}"`,
+    ];
+    if (config.wireApi) {
+      ccsFlags.push('-c', `model_providers._ccs.wire_api="${config.wireApi}"`);
+    }
+    child = spawnFn('codex', [...args.rest, ...ccsFlags], spawnOptions) as ChildProcess;
+    child.on('error', (err: Error) => {
+      process.stderr.write(chalk.red(`Error: Failed to launch codex: ${err.message}\n`));
+      process.stderr.write(chalk.dim('  Is codex installed? npm install -g @openai/codex\n'));
+      process.exit(1);
+    });
+  } else {
+    delete process.env.ANTHROPIC_API_KEY;
+    process.env.ANTHROPIC_BASE_URL = config.base_url;
+    process.env.ANTHROPIC_AUTH_TOKEN = config.apiKey;
+    process.env.ANTHROPIC_MODEL = config.model;
+    process.env.ANTHROPIC_SMALL_FAST_MODEL = config.smallModel;
+    process.env.ANTHROPIC_REASONING_MODEL = config.model;
+    process.env.ANTHROPIC_DEFAULT_OPUS_MODEL = config.model;
+    process.env.ANTHROPIC_DEFAULT_SONNET_MODEL = config.model;
+    process.env.ANTHROPIC_DEFAULT_HAIKU_MODEL = config.smallModel;
+
+    child = spawnFn('claude', args.rest, spawnOptions) as ChildProcess;
+    child.on('error', (err: Error) => {
+      process.stderr.write(chalk.red(`Error: Failed to launch claude: ${err.message}\n`));
+      process.exit(1);
+    });
+  }
+
   child.on('close', (code: number | null) => {
     process.exit(code ?? 1);
   });
