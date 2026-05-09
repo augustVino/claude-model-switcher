@@ -208,6 +208,7 @@ function printHelp(): void {
   console.log(boxLine('    "base_url": "' + chalk.green('https://...') + '",             ' + chalk.dim('← API 地址'), JSON_BOX_INNER_WIDTH));
   console.log(boxLine('    "api_key_env": "' + chalk.green('EXAMPLE_API_KEY') + '",     ' + chalk.dim('← 环境变量名'), JSON_BOX_INNER_WIDTH));
   console.log(boxLine('    "default_model": "model-name",            ' + chalk.dim('← 可选'), JSON_BOX_INNER_WIDTH));
+  console.log(boxLine('    "agent_cli": "' + chalk.green('cc') + '",                     ' + chalk.dim('← 可选, "cc" | "codex"'), JSON_BOX_INNER_WIDTH));
   console.log(boxLine('    "models": ["model-1", "model-2"]         ' + chalk.dim('← 可选'), JSON_BOX_INNER_WIDTH));
   console.log(boxLine('  }', JSON_BOX_INNER_WIDTH));
   console.log(boxLine(']', JSON_BOX_INNER_WIDTH));
@@ -223,6 +224,7 @@ function printHelp(): void {
   console.log(`    ${chalk.cyan('ccs')}` + '                          使用默认 provider 的默认模型');
   console.log(`    ${chalk.cyan('ccs @zhipu')}` + '                   使用 zhipu 的默认模型');
   console.log(`    ${chalk.cyan('ccs @zhipu:glm-4.6')}` + '           使用 zhipu 的指定模型');
+  console.log(`    ${chalk.cyan('ccs @zp-codex')}` + '              使用 codex provider 启动');
   console.log(`    ${chalk.cyan('ccs @list')}` + '                     列出所有已配置的 provider');
   console.log(`    ${chalk.cyan('ccs @help')}` + '                     显示本帮助信息');
   console.log(`    ${chalk.cyan('ccs @update')}` + '                  更新到最新版本');
