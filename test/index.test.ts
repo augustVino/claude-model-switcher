@@ -1,5 +1,6 @@
 import { describe, expect, it, beforeEach, afterEach, spyOn } from 'bun:test';
 import { main } from '../src/index';
+import { readFileSync } from 'node:fs';
 
 /** Sentinel error thrown by the process.exit mock to halt execution. */
 class ExitCaptureError extends Error {
@@ -258,5 +259,28 @@ describe('main', () => {
     expect(lastArgs[0]).toBe('install');
     expect(lastArgs[1]).toBe('-g');
     expect(lastArgs[2]).toContain('@vinoorg/claude-model-switcher@latest');
+  });
+
+  it('skips install when already at latest version for @update', async () => {
+    const { writeFileSync: wf, mkdirSync: ms } = await import('node:fs');
+    const emptyDir = join(getTmpDir(), 'empty-update-latest');
+    ms(emptyDir, { recursive: true });
+    process.env.XDG_CONFIG_HOME = emptyDir;
+    const cacheDir = join(emptyDir, 'claude-model-switcher');
+    ms(cacheDir, { recursive: true });
+    const pkg = JSON.parse(readFileSync(join(__dirname, '../package.json'), 'utf8'));
+    wf(join(cacheDir, '.update-cache.json'), JSON.stringify({ lastCheck: Date.now(), latestVersion: pkg.version }));
+
+    let spawned = false;
+    const noSpawnMock = function (): ChildProcess { spawned = true; return { on() { return this; } } as unknown as ChildProcess; };
+    const logSpy = spyOn(console, 'log').mockImplementation(() => {});
+
+    await runMain(['@update'], noSpawnMock);
+
+    expect(spawned).toBe(false);
+    expect(capturedExitCode).toBe(0);
+    expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('已是最新版本'));
+
+    logSpy.mockRestore();
   });
 });

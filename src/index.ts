@@ -12,10 +12,9 @@ import type { Provider, ResolvedConfig } from './types';
 import { dirname, join } from 'node:path';
 import { spawn, type SpawnOptions } from 'node:child_process';
 import type { ChildProcess } from 'node:child_process';
-import { checkUpdateNotification } from './update-checker';
+import { checkUpdateNotification, readCache, semverGt, PKG_NAME } from './update-checker';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const PKG_NAME = '@vinoorg/claude-model-switcher';
 const version: string = (() => {
   try {
     const pkg = JSON.parse(readFileSync(join(__dirname, '../package.json'), 'utf8'));
@@ -48,6 +47,12 @@ export async function main(
   }
 
   if (args.isUpdateCommand) {
+    const cache = readCache();
+    if (cache && !semverGt(cache.latestVersion, version)) {
+      console.log(chalk.green(`已是最新版本 (${version})`));
+      process.exit(0);
+    }
+
     const isBun = !!process.versions.bun;
     const cmd = isBun ? 'bun' : 'npm';
     const child = spawnFn(cmd, ['install', '-g', `${PKG_NAME}@latest`], { stdio: 'inherit', ...(process.platform === 'win32' ? { shell: true } : {}) }) as ChildProcess;

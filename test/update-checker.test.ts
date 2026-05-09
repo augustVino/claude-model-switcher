@@ -104,7 +104,11 @@ describe('update-checker', () => {
     it('triggers background check when cache is null', () => {
       spawnSpy = spyOn(child_process, 'spawn').mockImplementation(() => ({ unref: () => {} }) as any);
       checkUpdateNotification('1.0.0');
-      expect(spawnSpy).toHaveBeenCalled();
+      expect(spawnSpy).toHaveBeenCalledWith(
+        'sh',
+        expect.arrayContaining([expect.stringContaining('npm view')]),
+        expect.objectContaining({ detached: true, stdio: 'ignore' })
+      );
     });
 
     it('triggers background check when lastCheck is older than 24h', () => {

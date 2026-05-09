@@ -6,7 +6,7 @@ import chalk from 'chalk';
 
 export const CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000;
 
-const PKG_NAME = '@vinoorg/claude-model-switcher';
+export const PKG_NAME = '@vinoorg/claude-model-switcher';
 const VERSION_RE = /^\d+\.\d+\.\d+$/;
 
 interface UpdateCache {
@@ -47,16 +47,19 @@ export function semverGt(a: string, b: string): boolean {
 }
 
 function spawnBackgroundCheck(): void {
-  const cachePath = getCachePath();
   const cmd = [
     `LATEST=$(npm view ${PKG_NAME} version 2>/dev/null)`,
     `if [ -n "$LATEST" ]; then`,
-    `  mkdir -p "$(dirname '${cachePath}')"`,
-    `  printf '{"lastCheck":%s,"latestVersion":"%s"}' "$(date +%s000)" "$LATEST" > '${cachePath}'`,
+    `  mkdir -p "$(dirname "$CACHE_PATH")"`,
+    `  printf '{"lastCheck":%s,"latestVersion":"%s"}' "$(date +%s000)" "$LATEST" > "$CACHE_PATH"`,
     `fi`
   ].join(' ');
 
-  const child = spawn('sh', ['-c', cmd], { detached: true, stdio: 'ignore' });
+  const child = spawn('sh', ['-c', cmd], {
+    detached: true,
+    stdio: 'ignore',
+    env: { ...process.env, CACHE_PATH: getCachePath() }
+  });
   child.unref();
 }
 
