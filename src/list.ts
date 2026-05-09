@@ -48,6 +48,7 @@ export function listProviders(providers: Provider[]): void {
 
 function buildTag(model: string, provider: Provider): string {
   const tags: string[] = [];
+  if (provider.agent_cli === 'codex') tags.push(chalk.magenta('[codex]'));
   if (model === provider.default_model) tags.push(chalk.green('[default]'));
   if (model === provider.default_small_model && model !== provider.default_model) {
     tags.push(chalk.yellow('[small]'));

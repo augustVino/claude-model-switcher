@@ -141,4 +141,36 @@ describe('listProviders', () => {
     expect(output).toContain('glm-5-flash');
     expect(output).not.toContain('[default]');
   });
+
+  it('shows [codex] tag for providers with agent_cli "codex"', () => {
+    listProviders([
+      makeProvider({
+        name: 'zp-codex', base_url: 'http://a', api_key_env: 'K',
+        default_model: 'glm-4', agent_cli: 'codex'
+      })
+    ]);
+    expect(output).toContain('[codex]');
+  });
+
+  it('does not show [cc] tag for providers with agent_cli "cc"', () => {
+    listProviders([
+      makeProvider({
+        name: 'zp', base_url: 'http://a', api_key_env: 'K',
+        default_model: 'glm-4', agent_cli: 'cc'
+      })
+    ]);
+    expect(output).not.toContain('[cc]');
+    expect(output).not.toContain('[codex]');
+  });
+
+  it('does not show agent tag when agent_cli is not set', () => {
+    listProviders([
+      makeProvider({
+        name: 'zp', base_url: 'http://a', api_key_env: 'K',
+        default_model: 'glm-4'
+      })
+    ]);
+    expect(output).not.toContain('[cc]');
+    expect(output).not.toContain('[codex]');
+  });
 });
