@@ -302,6 +302,7 @@ describe('main', () => {
     expect(call.args).toEqual([
       '-c', 'model_provider="_ccs"',
       '-c', 'model="glm-5.1"',
+      '-c', 'model_providers._ccs.name="_ccs"',
       '-c', 'model_providers._ccs.base_url="https://open.bigmodel.cn/api/v1"',
       '-c', 'model_providers._ccs.env_key="TEST_KEY"',
     ]);

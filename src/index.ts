@@ -113,6 +113,7 @@ export async function main(
     const ccsFlags: string[] = [
       '-c', 'model_provider="_ccs"',
       '-c', `model="${config.model}"`,
+      '-c', `model_providers._ccs.name="_ccs"`,
       '-c', `model_providers._ccs.base_url="${config.base_url}"`,
       '-c', `model_providers._ccs.env_key="${config.apiKeyEnv}"`,
     ];
