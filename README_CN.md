@@ -89,6 +89,12 @@ ccs @lp -p "介绍一下这个项目"
 [v2.1.119]  ➜ my-project (main) @zhipu:glm-4.6  Ctx:45.2k/200k (22.6%)
 ```
 
+## 常见问题
+
+### 使用 ccs 后仍然连接到旧的 API 地址
+
+如果你之前使用 `cc-switch` 等工具在 `~/.zshrc` / `~/.bashrc` 中全局设置了 `ANTHROPIC_API_KEY`、`ANTHROPIC_BASE_URL` 或 `ANTHROPIC_AUTH_TOKEN` 等环境变量，请将这些变量从 shell 配置文件中移除或注释掉，否则它们会被子进程继承，导致 ccs 的配置被覆盖。
+
 ## 配置参考
 
 | 字段                | 必填 | 说明                                                                                         |

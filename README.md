@@ -89,6 +89,12 @@ Display the current provider, model, and context usage in your Claude Code statu
 [v2.1.119]  ➜ my-project (main) @zhipu:glm-4.6  Ctx:45.2k/200k (22.6%)
 ```
 
+## Troubleshooting
+
+### Still connecting to an old API endpoint after using ccs
+
+If you previously used tools like `cc-switch` that set `ANTHROPIC_API_KEY`, `ANTHROPIC_BASE_URL`, or `ANTHROPIC_AUTH_TOKEN` in your `~/.zshrc` / `~/.bashrc`, remove or comment out these variables. Otherwise they will be inherited by the child process and override ccs configuration.
+
 ## Config Reference
 
 | Field               | Required | Description                                                                                    |
