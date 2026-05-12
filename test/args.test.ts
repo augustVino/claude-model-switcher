@@ -77,4 +77,16 @@ describe('parseArgs', () => {
     expect(result.isHelpCommand).toBe(false);
     expect(result.isInitCommand).toBe(false);
   });
+
+  it('detects @config command', () => {
+    const result = parseArgs(['@config']);
+    expect(result.isConfigCommand).toBe(true);
+    expect(result.provider).toBe('');
+    expect(result.model).toBe('');
+    expect(result.rest).toEqual([]);
+    expect(result.isListCommand).toBe(false);
+    expect(result.isHelpCommand).toBe(false);
+    expect(result.isInitCommand).toBe(false);
+    expect(result.isUpdateCommand).toBe(false);
+  });
 });

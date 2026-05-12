@@ -46,6 +46,13 @@ export async function main(
     return;
   }
 
+  if (args.isConfigCommand) {
+    const { openConfig } = await import('./config-cmd');
+    const confPath = getConfigPath();
+    openConfig(confPath);
+    return;
+  }
+
   if (args.isUpdateCommand) {
     const cache = readCache();
     if (cache && !semverGt(cache.latestVersion, version)) {
@@ -205,5 +212,6 @@ function printHelp(): void {
   console.log(`    ${chalk.cyan('ccs @list')}` + '                     列出所有已配置的 provider');
   console.log(`    ${chalk.cyan('ccs @help')}` + '                     显示本帮助信息');
   console.log(`    ${chalk.cyan('ccs @update')}` + '                  更新到最新版本');
+  console.log(`    ${chalk.cyan('ccs @config')}` + '                  用编辑器打开配置文件');
   console.log();
 }

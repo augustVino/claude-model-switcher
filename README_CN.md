@@ -73,6 +73,7 @@ ccs @zhipu:glm-4.6           # 指定 provider + 模型
 ccs @list                    # 列出所有 provider 及模型
 ccs @init                    # 初始化或校验配置
 ccs @update                  # 更新到最新版本
+ccs @config                  # 用编辑器打开配置文件
 ccs @help                    # 显示帮助信息
 
 # 配合 Claude Code 官方参数使用
@@ -92,7 +93,7 @@ ccs @lp -p "介绍一下这个项目"
 
 | 字段                | 必填 | 说明                                                                                         |
 | ------------------- | ---- | -------------------------------------------------------------------------------------------- |
-| name                | 是   | provider 标识，用于 `@name`，仅允许 `[a-zA-Z0-9_-]`，不可为 `list`、`help`、`init`、`update`（保留字） |
+| name                | 是   | provider 标识，用于 `@name`，仅允许 `[a-zA-Z0-9_-]`，不可为 `list`、`help`、`init`、`update`、`config`（保留字） |
 | base_url            | 是   | Anthropic 兼容 API 端点                                                                      |
 | api_key_env         | 是   | 存放 API Key 的环境变量名                                                                    |
 | default_model       | 否   | 不指定模型时的默认模型                                                                       |

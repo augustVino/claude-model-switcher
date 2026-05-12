@@ -48,7 +48,7 @@ export function readConfig(configPath: string): Provider[] {
     throw new ConfigError(`No providers configured in ${configPath}`);
   }
 
-  const RESERVED_NAMES = new Set(['list', 'help', 'init', 'update']);
+  const RESERVED_NAMES = new Set(['list', 'help', 'init', 'update', 'config']);
 
   const entries = parsed as RawEntry[];
   for (const p of entries) {

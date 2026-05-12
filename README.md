@@ -73,6 +73,7 @@ ccs @zhipu:glm-4.6           # Provider + model
 ccs @list                    # List all providers & models
 ccs @init                    # Init or validate config
 ccs @update                  # Update to latest version
+ccs @config                  # Open config file in editor
 ccs @help                    # Show help
 
 # Works with all native Claude Code flags
@@ -92,7 +93,7 @@ Display the current provider, model, and context usage in your Claude Code statu
 
 | Field               | Required | Description                                                                                    |
 | ------------------- | -------- | ---------------------------------------------------------------------------------------------- |
-| name                | Yes      | Provider identifier for `@name`. Only `[a-zA-Z0-9_-]`. Reserved: `list`, `help`, `init`, `update` |
+| name                | Yes      | Provider identifier for `@name`. Only `[a-zA-Z0-9_-]`. Reserved: `list`, `help`, `init`, `update`, `config` |
 | base_url            | Yes      | Anthropic-compatible API endpoint                                                              |
 | api_key_env         | Yes      | Environment variable name holding the API key                                                  |
 | default_model       | No       | Model used when not specified                                                                  |

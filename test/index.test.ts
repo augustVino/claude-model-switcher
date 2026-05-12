@@ -18,6 +18,7 @@ async function runMain(argv: string[], spawnFn?: Parameters<typeof main>[1]): Pr
 import { setupTmpDir, writeConfig, getTmpDir } from './helpers';
 import { join } from 'node:path';
 import type { ChildProcess } from 'node:child_process';
+import * as childProcess from 'node:child_process';
 
 const envSnapshots: Record<string, string | undefined> = {};
 let capturedExitCode: number | null = null;
@@ -282,5 +283,41 @@ describe('main', () => {
     expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('已是最新版本'));
 
     logSpy.mockRestore();
+  });
+
+  it('calls openConfig for @config and exits with code 0 without spawning claude', async () => {
+    await writeConfig(JSON.stringify([{
+      name: 'zhipu', base_url: 'https://z.ai/api', api_key_env: 'TEST_KEY', default_model: 'glm-4'
+    }]));
+
+    const spawnSyncSpy = spyOn(childProcess, 'spawnSync').mockImplementation(() => ({ status: 0 }) as any);
+
+    let spawned = false;
+    const noSpawnMock = function (): ChildProcess { spawned = true; return { on() { return this; } } as unknown as ChildProcess; };
+    await runMain(['@config'], noSpawnMock);
+
+    expect(spawned).toBe(false);
+    expect(capturedExitCode).toBe(0);
+
+    spawnSyncSpy.mockRestore();
+  });
+
+  it('exits with error for @config when config file does not exist', async () => {
+    const emptyDir = join(getTmpDir(), 'empty-config');
+    const { mkdir: mk } = await import('node:fs/promises');
+    await mk(emptyDir, { recursive: true });
+    process.env.XDG_CONFIG_HOME = emptyDir;
+
+    const stderrSpy = spyOn(process.stderr, 'write').mockImplementation(() => true as any);
+
+    let spawned = false;
+    const noSpawnMock = function (): ChildProcess { spawned = true; return { on() { return this; } } as unknown as ChildProcess; };
+    await runMain(['@config'], noSpawnMock);
+
+    expect(spawned).toBe(false);
+    expect(capturedExitCode).toBe(1);
+    expect(stderrSpy).toHaveBeenCalledWith(expect.stringContaining('ccs @init'));
+
+    stderrSpy.mockRestore();
   });
 });
