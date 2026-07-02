@@ -50,18 +50,20 @@ function handleClean(rest: string[], tracesDir: string, exitFn: (code?: number) 
   if (hasAll && keepPresent) {
     process.stderr.write('Error: --all and --keep conflict. Choose one.\n');
     exitFn(1);
+    return;
   }
   let keep = 50;
   if (hasAll) {
     keep = 0;
   } else if (keepPresent) {
     const val = rest[keepIdx + 1];
-    const n = parseInt(val, 10);
-    if (val === undefined || Number.isNaN(n)) {
+    // 严格校验：仅纯数字（含 0）合法。拒绝负数、小数、parseInt 会吞掉的尾部垃圾（如 5abc）。
+    if (val === undefined || !/^\d+$/.test(val)) {
       process.stderr.write('Error: --keep requires a non-negative integer.\n');
       exitFn(1);
+      return;
     }
-    keep = Math.max(0, n);
+    keep = parseInt(val, 10);
   }
   const result = cleanSessions(tracesDir, keep);
   process.stderr.write(`Kept ${result.kept.length} session(s), removed ${result.removed.length}.\n`);

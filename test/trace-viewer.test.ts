@@ -75,11 +75,63 @@ describe('viewTrace', () => {
     expect(listSessions(dir)).toEqual([]);
   });
 
-  it('clean --keep N keeps N newest; clamps negative', async () => {
+  it('clean --keep N keeps N newest', async () => {
     const dir = await seedSessions(['20260630091224-a-11111111', '20260630091225-a-22222222', '20260630091226-a-33333333']);
     try { viewTrace(['clean', '--keep', '1'], dir, { exitImpl: noopExit }); } catch (e) { expect(e).toBeInstanceOf(ExitSignal); }
     const { listSessions } = await import('../src/trace-session');
     expect(listSessions(dir)).toEqual(['20260630091226-a-33333333']);
+  });
+
+  it('clean --keep 5 keeps up to 5 newest', async () => {
+    const dir = await seedSessions(['20260630091224-a-11111111', '20260630091225-a-22222222', '20260630091226-a-33333333']);
+    try { viewTrace(['clean', '--keep', '5'], dir, { exitImpl: noopExit }); } catch (e) { expect(e).toBeInstanceOf(ExitSignal); }
+    const { listSessions } = await import('../src/trace-session');
+    expect(listSessions(dir)).toHaveLength(3);
+  });
+
+  it('clean --keep 0 deletes all (legal non-negative integer)', async () => {
+    const dir = await seedSessions(['20260630091224-a-11111111', '20260630091225-a-22222222']);
+    let code: number | undefined;
+    try {
+      viewTrace(['clean', '--keep', '0'], dir, {
+        exitImpl: ((c?: number) => { code = c ?? 1; throw new ExitSignal(); }) as unknown as (c?: number) => never,
+      });
+    } catch {}
+    expect(code).toBe(0);
+    const { listSessions } = await import('../src/trace-session');
+    expect(listSessions(dir)).toEqual([]);
+  });
+
+  it('clean --keep -3 is rejected (not clamped) and deletes nothing', async () => {
+    const dir = await seedSessions(['20260630091224-a-11111111', '20260630091225-a-22222222']);
+    const errSpy = spyOn(process.stderr, 'write');
+    let code: number | undefined;
+    try {
+      viewTrace(['clean', '--keep', '-3'], dir, {
+        exitImpl: ((c?: number) => { code = c ?? 1; throw new ExitSignal(); }) as unknown as (c?: number) => never,
+      });
+    } catch {}
+    expect(code).toBe(1);
+    expect(errSpy.mock.calls.some(c => String(c[0]).includes('--keep requires'))).toBe(true);
+    errSpy.mockRestore();
+    const { listSessions } = await import('../src/trace-session');
+    expect(listSessions(dir)).toHaveLength(2);
+  });
+
+  it('clean --keep 5abc is rejected (trailing garbage) and deletes nothing', async () => {
+    const dir = await seedSessions(['20260630091224-a-11111111']);
+    const errSpy = spyOn(process.stderr, 'write');
+    let code: number | undefined;
+    try {
+      viewTrace(['clean', '--keep', '5abc'], dir, {
+        exitImpl: ((c?: number) => { code = c ?? 1; throw new ExitSignal(); }) as unknown as (c?: number) => never,
+      });
+    } catch {}
+    expect(code).toBe(1);
+    expect(errSpy.mock.calls.some(c => String(c[0]).includes('--keep requires'))).toBe(true);
+    errSpy.mockRestore();
+    const { listSessions } = await import('../src/trace-session');
+    expect(listSessions(dir)).toHaveLength(1);
   });
 
   it('clean errors when --all and --keep both present', async () => {
