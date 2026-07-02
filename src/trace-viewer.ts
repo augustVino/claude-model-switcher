@@ -46,17 +46,22 @@ export function viewTrace(rest: string[], tracesDir: string, opts: ViewerOptions
 function handleClean(rest: string[], tracesDir: string, exitFn: (code?: number) => never): void {
   const hasAll = rest.includes('--all');
   const keepIdx = rest.indexOf('--keep');
-  const hasKeep = keepIdx !== -1 && rest[keepIdx + 1] !== undefined;
-  if (hasAll && hasKeep) {
+  const keepPresent = keepIdx !== -1;
+  if (hasAll && keepPresent) {
     process.stderr.write('Error: --all and --keep conflict. Choose one.\n');
     exitFn(1);
   }
   let keep = 50;
   if (hasAll) {
     keep = 0;
-  } else if (hasKeep) {
-    const n = parseInt(rest[keepIdx + 1], 10);
-    keep = Number.isNaN(n) ? 50 : Math.max(0, n);
+  } else if (keepPresent) {
+    const val = rest[keepIdx + 1];
+    const n = parseInt(val, 10);
+    if (val === undefined || Number.isNaN(n)) {
+      process.stderr.write('Error: --keep requires a non-negative integer.\n');
+      exitFn(1);
+    }
+    keep = Math.max(0, n);
   }
   const result = cleanSessions(tracesDir, keep);
   process.stderr.write(`Kept ${result.kept.length} session(s), removed ${result.removed.length}.\n`);

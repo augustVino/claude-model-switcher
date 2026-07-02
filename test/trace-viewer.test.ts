@@ -95,4 +95,36 @@ describe('viewTrace', () => {
     expect(errSpy.mock.calls.some(c => String(c[0]).includes('conflict'))).toBe(true);
     errSpy.mockRestore();
   });
+
+  it('clean errors on bare --keep and deletes nothing', async () => {
+    const dir = await seedSessions(['20260630091224-a-11111111', '20260630091225-a-22222222']);
+    const errSpy = spyOn(process.stderr, 'write');
+    let code: number | undefined;
+    try {
+      viewTrace(['clean', '--keep'], dir, {
+        exitImpl: ((c?: number) => { code = c ?? 1; throw new ExitSignal(); }) as unknown as (c?: number) => never,
+      });
+    } catch {}
+    expect(code).toBe(1);
+    expect(errSpy.mock.calls.some(c => String(c[0]).includes('--keep requires'))).toBe(true);
+    errSpy.mockRestore();
+    const { listSessions } = await import('../src/trace-session');
+    expect(listSessions(dir)).toHaveLength(2); // 没有任何 session 被删除
+  });
+
+  it('clean errors on non-numeric --keep and deletes nothing', async () => {
+    const dir = await seedSessions(['20260630091224-a-11111111']);
+    const errSpy = spyOn(process.stderr, 'write');
+    let code: number | undefined;
+    try {
+      viewTrace(['clean', '--keep', 'abc'], dir, {
+        exitImpl: ((c?: number) => { code = c ?? 1; throw new ExitSignal(); }) as unknown as (c?: number) => never,
+      });
+    } catch {}
+    expect(code).toBe(1);
+    expect(errSpy.mock.calls.some(c => String(c[0]).includes('--keep requires'))).toBe(true);
+    errSpy.mockRestore();
+    const { listSessions } = await import('../src/trace-session');
+    expect(listSessions(dir)).toHaveLength(1);
+  });
 });
