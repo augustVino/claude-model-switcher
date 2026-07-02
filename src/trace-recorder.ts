@@ -90,6 +90,7 @@ export class Recorder {
         truncated: record.response.truncated,
       },
     };
+    // TODO v2: 迁移到 fs.promises.appendFile 或缓冲批量写入，避免在高频/并发 trace 负载下阻塞事件循环
     appendFileSync(this.filePath, JSON.stringify({ type: 'request', ...full }) + '\n', 'utf8');
   }
 
