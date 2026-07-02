@@ -1,15 +1,5 @@
 import type { Recorder } from './trace-recorder';
 
-// Minimal ambient shim: tsc has no @types/bun in this project, so Bun.serve is
-// otherwise untyped (TS2867). Declared structurally to satisfy strict mode
-// without altering runtime behavior. Keep narrow — only the surface used here.
-declare const Bun: {
-  serve(opts: {
-    port?: number | string;
-    fetch: (req: Request) => Response | Promise<Response>;
-  }): { port: number; stop(immediately?: boolean): void };
-};
-
 export interface TraceProxyOptions {
   upstreamBaseUrl: string;
   recorder: Recorder;
@@ -154,7 +144,7 @@ export function startTraceProxy(opts: TraceProxyOptions): TraceProxy {
   });
 
   return {
-    port: server.port,
+    port: server.port!,
     async stop() {
       // 等 in-flight 写入完成；硬超时兜底，防 upstream hang 导致 allSettled 永不结束（NB2 防御）
       await Promise.race([
