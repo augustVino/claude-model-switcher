@@ -415,5 +415,10 @@ describe('main', () => {
     }
     expect(process.env.ANTHROPIC_BASE_URL).toBe('https://open.bigmodel.cn/api/anthropic');
     expect((mockFn as any).__lastCall().cmd).toBe('claude');
+    // Recorder writes session_meta before startTraceProxy throws; the orphan file
+    // must be removed so the traces dir is not polluted with an empty session.
+    const { getTracesDir } = await import('../src/trace-session');
+    const { listSessions } = await import('../src/trace-session');
+    expect(listSessions(getTracesDir())).toEqual([]);
   });
 });

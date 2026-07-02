@@ -122,12 +122,13 @@ export async function main(
   if (config.trace) {
     let proxy: import('./trace-proxy').TraceProxy | null = null;
     let recorder: import('./trace-recorder').Recorder | null = null;
+    let filePath: string | undefined;
     try {
       const { generateSessionId, buildTracePath, getTracesDir, cleanSessions } = await import('./trace-session');
       const { Recorder } = await import('./trace-recorder');
       const { startTraceProxy } = await import('./trace-proxy');
       const sessionId = generateSessionId(args.provider || 'provider');
-      const filePath = buildTracePath(getTracesDir(), sessionId);
+      filePath = buildTracePath(getTracesDir(), sessionId);
       recorder = new Recorder(filePath, {
         sessionId,
         provider: args.provider || 'provider',
@@ -147,7 +148,7 @@ export async function main(
           try { cleanSessions(getTracesDir(), 50); } catch {}
         } else {
           // 未记录任何请求：删除本次的空 meta 文件，不触发清理（避免误删真实历史 session）
-          try { unlinkSync(filePath); } catch {}
+          if (filePath) { try { unlinkSync(filePath); } catch {} }
         }
         process.stderr.write(`ccs trace saved: ${sessionId}\n`);
         prox.stop(); // 返回 Promise 但不 await；靠 process.exit 终止进程时自然销毁（NB1+NB2）
@@ -158,6 +159,8 @@ export async function main(
       effectiveBaseUrl = config.base_url;
       // 释放已构造的资源
       try { recorder?.close(); } catch {}
+      // 删除 Recorder 构造时已写入的 session_meta（避免遗留空 orphan 文件）
+      if (filePath) { try { unlinkSync(filePath); } catch {} }
       try { await proxy?.stop(); } catch {}
       traceCleanup = null;
     }
