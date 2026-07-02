@@ -36,6 +36,8 @@ export interface TraceRecord {
     headers: Record<string, string>;
     body: unknown;
     sse: boolean;
+    /** true 表示响应流中途出错，body 仅为出错前收到的部分（调试用标记） */
+    incomplete?: boolean;
   };
 }
 
@@ -82,6 +84,7 @@ export class Recorder {
         headers: redactHeaders(record.response.headers),
         body: record.response.body,
         sse: record.response.sse,
+        incomplete: record.response.incomplete,
       },
     };
     appendFileSync(this.filePath, JSON.stringify({ type: 'request', ...full }) + '\n', 'utf8');

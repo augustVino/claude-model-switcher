@@ -94,6 +94,7 @@ export function startTraceProxy(opts: TraceProxyOptions): TraceProxy {
 
       const work = (async () => {
         const reader = (upstreamRes.body ?? new ReadableStream({ start(c) { c.close(); } })).getReader();
+        let incomplete = false;
         try {
           while (true) {
             const { done, value } = await reader.read();
@@ -102,7 +103,8 @@ export function startTraceProxy(opts: TraceProxyOptions): TraceProxy {
             chunks.push(value);
           }
         } catch {
-          // 流中途出错：尽力透传已收到的内容
+          // 流中途出错：尽力透传已收到的内容，并标记 incomplete 以保留调试价值
+          incomplete = true;
         } finally {
           await writer.close().catch(() => {});
           try {
@@ -116,6 +118,7 @@ export function startTraceProxy(opts: TraceProxyOptions): TraceProxy {
                 headers: resHeadersObj,
                 body: isSSE ? fullText : safeParse(fullText),
                 sse: isSSE,
+                incomplete,
               },
             });
           } catch (e) {

@@ -104,4 +104,50 @@ describe('startTraceProxy', () => {
     const lines = readFileSync(join(tmpDir, 'b.jsonl'), 'utf8').trim().split('\n').map(JSON.parse);
     expect(lines[1].response.status).toBe(502);
   });
+
+  it('marks response incomplete when upstream stream errors mid-way', async () => {
+    const recorder = newRecorder('err.jsonl');
+    // 通过 fetchImpl 注入控制 proxy 读取的流（HTTP 边界会把流错误吞成 EOF，故在此直接注入，
+    // 忠实模拟 Bun.fetch 在真实中途断连时 surface 给消费端的 read 拒绝）
+    let pulled = false;
+    const mockFetch = (() => {
+      const stream = new ReadableStream<Uint8Array>({
+        pull(controller) {
+          if (!pulled) {
+            pulled = true;
+            controller.enqueue(new TextEncoder().encode('data: {"type":"message_start"}\n\n'));
+            return;
+          }
+          return Promise.reject(new Error('upstream stream broke'));
+        },
+      });
+      return Promise.resolve(new Response(stream, {
+        status: 200,
+        headers: { 'content-type': 'text/event-stream' },
+      }));
+    }) as unknown as typeof fetch;
+
+    const proxy = startTraceProxy({
+      upstreamBaseUrl: 'http://upstream.invalid',
+      recorder,
+      fetchImpl: mockFetch,
+    });
+
+    const res = await fetch(`http://127.0.0.1:${proxy.port}/v1/messages`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ model: 'glm', messages: [{ role: 'user', content: 'hi' }] }),
+    });
+    const text = await res.text();
+    // 透明透传：客户端仍能收到出错前的那一块
+    expect(text).toContain('message_start');
+
+    await proxy.stop();
+    recorder.close();
+
+    const lines = readFileSync(join(tmpDir, 'err.jsonl'), 'utf8').trim().split('\n').map(JSON.parse);
+    const rec = lines[1];
+    expect(rec.response.incomplete).toBe(true);
+    expect(rec.response.body).toContain('message_start'); // 出错前已收到的部分
+  });
 });
