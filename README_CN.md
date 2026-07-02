@@ -148,6 +148,8 @@ ccs @lp -p "介绍一下这个项目"
 
 通过 `ccs @trace` 查看已记录的会话（详见[用法](#用法)）。默认保留最近 50 个会话，更早的会在新会话记录时自动清理；也可用 `ccs @trace clean [--all|--keep N]` 手动清理。
 
+注意：trace 记录中的 `incomplete` 标记并不能捕获所有上游中断。`Bun.fetch`（WHATWG Streams）可能将上游的流中途断开规整为干净的 EOF，此时 `incomplete` 保持 `false`；该标记仅在代理读取流被拒绝（如 TCP reset）时才会置位。
+
 ## 许可证
 
 MIT

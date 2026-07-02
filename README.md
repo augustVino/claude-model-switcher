@@ -148,6 +148,8 @@ Set `"trace": true` on a provider to record every Claude Code API request/respon
 
 Inspect recorded sessions with `ccs @trace` (see [Usage](#usage)). By default the 50 most recent sessions are kept; older ones are pruned automatically when a new session is recorded. Use `ccs @trace clean [--all|--keep N]` to prune manually.
 
+Note: a trace record's `incomplete` flag does not capture every upstream interruption. `Bun.fetch` (WHATWG Streams) may surface a mid-stream upstream break as a clean EOF, in which case `incomplete` stays `false`; the flag only fires when the proxy's stream read is rejected (e.g. TCP reset).
+
 ## License
 
 MIT

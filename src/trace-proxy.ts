@@ -116,7 +116,12 @@ export function startTraceProxy(opts: TraceProxyOptions): TraceProxy {
             }
           }
         } catch {
-          // 流中途出错：尽力透传已收到的内容，并标记 incomplete 以保留调试价值
+          // 流中途出错：尽力透传已收到的内容，并标记 incomplete 以保留调试价值。
+          // 注意：incomplete 并不覆盖所有上游中断。Bun.fetch（基于 WHATWG Streams）会把
+          // 上游应用层的中途断流（controller.error / 服务端关闭等）规整为干净的 EOF
+          // （reader.read() → {done:true}），于是这里的 catch 不会触发，incomplete 保持
+          // false。catch 仅在 fetch 读取层抛出 rejection（如 TCP reset）时才命中。
+          // 该 catch 是正确的防御，只是无法保证捕获所有上游断流类型。
           incomplete = true;
         } finally {
           await writer.close().catch(() => {});
