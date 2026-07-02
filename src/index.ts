@@ -263,5 +263,6 @@ function printHelp(): void {
   console.log(`    ${chalk.cyan('ccs @help')}` + '                     显示本帮助信息');
   console.log(`    ${chalk.cyan('ccs @update')}` + '                  更新到最新版本');
   console.log(`    ${chalk.cyan('ccs @config')}` + '                  用编辑器打开配置文件');
+  console.log(`    ${chalk.cyan('ccs @trace')}` + '                   查看最近 trace 记录（需 provider 配置 trace:true）');
   console.log();
 }

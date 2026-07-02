@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## Unreleased
+
+
+### Features
+
+* add `trace` provider config field and `ccs @trace` command to record and inspect Claude Code API traffic for debugging provider behavior
+
+
 ## 1.1.0 (2026-05-12)
 
 

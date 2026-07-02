@@ -74,6 +74,12 @@ ccs @list                    # List all providers & models
 ccs @init                    # Init or validate config
 ccs @update                  # Update to latest version
 ccs @config                  # Open config file in editor
+ccs @trace                   # Open traces directory in editor
+ccs @trace latest            # Open the most recent trace session
+ccs @trace <session-id>      # Open a specific trace session
+ccs @trace clean             # Keep the latest 50 sessions, remove older ones
+ccs @trace clean --all       # Remove all trace sessions
+ccs @trace clean --keep N    # Keep the latest N sessions
 ccs @help                    # Show help
 
 # Works with all native Claude Code flags
@@ -105,6 +111,7 @@ If you previously used tools like `cc-switch` that set `ANTHROPIC_API_KEY`, `ANT
 | default_model       | No       | Model used when not specified                                                                  |
 | default_small_model | No       | Lightweight model (falls back to `default_model`)                                              |
 | models              | No       | Available model list (`string[]`). Defaults to showing `default_model` + `default_small_model` |
+| trace               | No       | Set to `true` to record this provider's API traffic to `~/.config/claude-model-switcher/traces/` for debugging |
 
 **Rules:**
 
@@ -124,6 +131,22 @@ If you previously used tools like `cc-switch` that set `ANTHROPIC_API_KEY`, `ANT
 ```
 
 No code changes needed.
+
+## Tracing API Traffic
+
+Set `"trace": true` on a provider to record every Claude Code API request/response to that provider for debugging. Traces are written to `~/.config/claude-model-switcher/traces/` as JSONL files named `<yyyymmddHHMMSS>-<provider>-<8hex>.jsonl` (e.g. `20260701143022-zhipu-a1b2c3d4.jsonl`). Sensitive request/response headers are redacted.
+
+```json
+{
+  "name": "zhipu",
+  "base_url": "https://open.bigmodel.cn/api/anthropic",
+  "api_key_env": "ZHIPU_API_KEY",
+  "default_model": "glm-4.6",
+  "trace": true
+}
+```
+
+Inspect recorded sessions with `ccs @trace` (see [Usage](#usage)). By default the 50 most recent sessions are kept; older ones are pruned automatically when a new session is recorded. Use `ccs @trace clean [--all|--keep N]` to prune manually.
 
 ## License
 
