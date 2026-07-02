@@ -390,5 +390,6 @@ describe('main', () => {
       errSpy.mockRestore();
     }
     expect(process.env.ANTHROPIC_BASE_URL).toBe('https://open.bigmodel.cn/api/anthropic');
+    expect((mockFn as any).__lastCall().cmd).toBe('claude');
   });
 });

@@ -1,6 +1,6 @@
 import { describe, expect, it, beforeEach } from 'bun:test';
 import { setupTmpDir } from './helpers';
-import { mkdir, writeFile, chmod } from 'node:fs/promises';
+import { mkdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import {
   generateSessionId, buildTracePath, listSessions, latestSession, cleanSessions,
