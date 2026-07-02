@@ -38,6 +38,8 @@ export interface TraceRecord {
     sse: boolean;
     /** true 表示响应流中途出错，body 仅为出错前收到的部分（调试用标记） */
     incomplete?: boolean;
+    /** true 表示响应体超过记录上限，body 被截断（透传不受影响） */
+    truncated?: boolean;
   };
 }
 
@@ -85,6 +87,7 @@ export class Recorder {
         body: record.response.body,
         sse: record.response.sse,
         incomplete: record.response.incomplete,
+        truncated: record.response.truncated,
       },
     };
     appendFileSync(this.filePath, JSON.stringify({ type: 'request', ...full }) + '\n', 'utf8');

@@ -21,6 +21,10 @@ export interface TraceProxy {
   stop: () => Promise<void>;
 }
 
+// 记录端单请求 body 字节上限（透传不受此限）。超出后停止累积，仅标记 truncated。
+// TODO v2: stream recorded body to a sidecar file instead of capping
+const MAX_BODY_BYTES = 1_000_000;
+
 const BODY_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 
 // hop-by-hop（RFC 7230）+ content-length（body 读取重发后由 fetch 重算）
@@ -87,10 +91,12 @@ export function startTraceProxy(opts: TraceProxyOptions): TraceProxy {
         if (!RESPONSE_STRIP.has(k.toLowerCase())) resFwd.set(k, v);
       });
 
-      // 边透传边收集
+      // 边透传边收集（记录端有上限，透传不受限）
       const { readable, writable } = new TransformStream();
       const writer = writable.getWriter();
-      const chunks: Uint8Array[] = []; // TODO v2: 长会话全量缓存内存，可改为流式落盘/上限截断
+      const chunks: Uint8Array[] = [];
+      let totalBytes = 0;
+      let truncated = false;
 
       const work = (async () => {
         const reader = (upstreamRes.body ?? new ReadableStream({ start(c) { c.close(); } })).getReader();
@@ -99,8 +105,15 @@ export function startTraceProxy(opts: TraceProxyOptions): TraceProxy {
           while (true) {
             const { done, value } = await reader.read();
             if (done) break;
-            await writer.write(value);
-            chunks.push(value);
+            await writer.write(value); // 透传永不截断
+            totalBytes += value.byteLength;
+            if (!truncated) {
+              if (totalBytes > MAX_BODY_BYTES) {
+                truncated = true; // 超上限：停止累积，但继续转发
+              } else {
+                chunks.push(value);
+              }
+            }
           }
         } catch {
           // 流中途出错：尽力透传已收到的内容，并标记 incomplete 以保留调试价值
@@ -119,6 +132,7 @@ export function startTraceProxy(opts: TraceProxyOptions): TraceProxy {
                 body: isSSE ? fullText : safeParse(fullText),
                 sse: isSSE,
                 incomplete,
+                truncated,
               },
             });
           } catch (e) {

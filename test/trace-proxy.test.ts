@@ -35,7 +35,23 @@ const upstreamGzip = Bun.serve({
   },
 });
 
-afterAll(() => { upstream.stop(true); upstreamGzip.stop(true); });
+// mock upstream：长 SSE 流（2000 × ~1KB ≈ 2MB），验证透传不截断、记录端截断
+const upstreamLong = Bun.serve({
+  port: 0,
+  async fetch() {
+    const chunk = new TextEncoder().encode('data: ' + 'x'.repeat(1010) + '\n\n');
+    let i = 0;
+    const stream = new ReadableStream<Uint8Array>({
+      pull(controller) {
+        if (i < 2000) { controller.enqueue(chunk); i++; }
+        else controller.close();
+      },
+    });
+    return new Response(stream, { status: 200, headers: { 'content-type': 'text/event-stream' } });
+  },
+});
+
+afterAll(() => { upstream.stop(true); upstreamGzip.stop(true); upstreamLong.stop(true); });
 beforeEach(async () => { tmpDir = await setupTmpDir(); });
 
 function newRecorder(name: string): Recorder {
@@ -149,5 +165,29 @@ describe('startTraceProxy', () => {
     const rec = lines[1];
     expect(rec.response.incomplete).toBe(true);
     expect(rec.response.body).toContain('message_start'); // 出错前已收到的部分
+  });
+
+  it('caps recorded body at ~1MB but passes the full stream through to the client', async () => {
+    const recorder = newRecorder('long.jsonl');
+    const proxy = startTraceProxy({ upstreamBaseUrl: `http://127.0.0.1:${upstreamLong.port}`, recorder });
+
+    const res = await fetch(`http://127.0.0.1:${proxy.port}/v1/messages`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ model: 'glm', messages: [{ role: 'user', content: 'hi' }] }),
+    });
+    const buf = await res.arrayBuffer();
+    // 透传永不截断：客户端收到完整 ~2MB
+    expect(buf.byteLength).toBeGreaterThan(1_500_000);
+
+    await proxy.stop();
+    recorder.close();
+
+    const lines = readFileSync(join(tmpDir, 'long.jsonl'), 'utf8').trim().split('\n').map(JSON.parse);
+    const rec = lines[1];
+    expect(rec.response.truncated).toBe(true);
+    // 记录端被截断到 ≤ ~1MB
+    const bodyLen = typeof rec.response.body === 'string' ? rec.response.body.length : 0;
+    expect(bodyLen).toBeLessThanOrEqual(1_100_000);
   });
 });
