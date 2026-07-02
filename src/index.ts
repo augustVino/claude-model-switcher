@@ -1,6 +1,6 @@
 import chalk from 'chalk';
 import stringWidth from 'string-width';
-import { readFileSync } from 'node:fs';
+import { readFileSync, unlinkSync } from 'node:fs';
 import { padDisplayWidth, boxLine } from './box';
 import { fileURLToPath } from 'node:url';
 
@@ -127,7 +127,8 @@ export async function main(
       const { Recorder } = await import('./trace-recorder');
       const { startTraceProxy } = await import('./trace-proxy');
       const sessionId = generateSessionId(args.provider || 'provider');
-      recorder = new Recorder(buildTracePath(getTracesDir(), sessionId), {
+      const filePath = buildTracePath(getTracesDir(), sessionId);
+      recorder = new Recorder(filePath, {
         sessionId,
         provider: args.provider || 'provider',
         model: config.model,
@@ -142,7 +143,12 @@ export async function main(
         // 【必须同步】close/error 回调是同步触发的，process.exit 的 throw 必须留在同步栈，
         // 否则测试 harness 的 exit 捕获失效（NB1）。proxy.stop() fire-and-forget，不 await。
         try { rec.close(); } catch {}
-        try { cleanSessions(getTracesDir(), 50); } catch {}
+        if (rec.hasRecorded) {
+          try { cleanSessions(getTracesDir(), 50); } catch {}
+        } else {
+          // 未记录任何请求：删除本次的空 meta 文件，不触发清理（避免误删真实历史 session）
+          try { unlinkSync(filePath); } catch {}
+        }
         process.stderr.write(`ccs trace saved: ${sessionId}\n`);
         prox.stop(); // 返回 Promise 但不 await；靠 process.exit 终止进程时自然销毁（NB1+NB2）
       };

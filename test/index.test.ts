@@ -373,6 +373,30 @@ describe('main', () => {
     expect(spawnCalls.some(c => c[0] === 'claude')).toBe(false);
   });
 
+  it('deletes its own empty trace session and skips cleanup when no requests recorded', async () => {
+    await writeConfig(JSON.stringify([{
+      name: 'zhipu', base_url: 'https://open.bigmodel.cn/api/anthropic',
+      api_key_env: 'TEST_KEY', default_model: 'glm-4.6', trace: true
+    }]));
+    process.env.TEST_KEY = 'secret-key';
+
+    // Seed an older real session that must NOT be removed by the empty-session exit.
+    const { getTracesDir } = await import('../src/trace-session');
+    const { listSessions } = await import('../src/trace-session');
+    const { writeFile, mkdir } = await import('node:fs/promises');
+    const tracesDir = getTracesDir();
+    await mkdir(tracesDir, { recursive: true });
+    const oldSession = '20250101000000-zhipu-oldoldold';
+    await writeFile(join(tracesDir, `${oldSession}.jsonl`), '{"type":"session_meta"}\n');
+
+    const mockFn = mockSpawnClose(0); // claude exits before any request → turn stays 0
+    await runMainQuiet(['@zhipu'], mockFn);
+
+    // The empty session this run created (meta-only, turn=0) must be self-deleted;
+    // the seeded real session must survive (no cleanup ran).
+    expect(listSessions(tracesDir)).toEqual([oldSession]);
+  });
+
   it('falls back to direct connection when proxy start fails', async () => {
     await writeConfig(JSON.stringify([{
       name: 'zhipu', base_url: 'https://open.bigmodel.cn/api/anthropic',

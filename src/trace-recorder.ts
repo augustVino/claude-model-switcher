@@ -59,6 +59,11 @@ export class Recorder {
     appendFileSync(filePath, JSON.stringify({ type: 'session_meta', ...meta }) + '\n', 'utf8');
   }
 
+  /** 是否已记录至少一次真实请求（turn>0）。构造时写入的 session_meta 不计。 */
+  get hasRecorded(): boolean {
+    return this.turn > 0;
+  }
+
   writeRequest(record: Omit<TraceRecord, 'turn'>): void {
     if (this.closed) return;
     this.turn += 1;
