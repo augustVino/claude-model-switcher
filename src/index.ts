@@ -1,6 +1,6 @@
 import chalk from 'chalk';
 import stringWidth from 'string-width';
-import { readFileSync } from 'node:fs';
+import { readFileSync, unlinkSync } from 'node:fs';
 import { padDisplayWidth, boxLine } from './box';
 import { fileURLToPath } from 'node:url';
 
@@ -29,6 +29,7 @@ export async function main(
   spawnFn: typeof spawn = spawn
 ): Promise<void> {
   const args = parseArgs(argv);
+  let traceCleanup: (() => void) | null = null;
 
   if (!args.isUpdateCommand) {
     checkUpdateNotification(version);
@@ -51,6 +52,13 @@ export async function main(
     const confPath = getConfigPath();
     openConfig(confPath);
     return;
+  }
+
+  if (args.isTraceCommand) {
+    const { viewTrace } = await import('./trace-viewer');
+    const { getTracesDir } = await import('./trace-session');
+    viewTrace(args.rest, getTracesDir());
+    return; // viewTrace 内部 process.exit
   }
 
   if (args.isUpdateCommand) {
@@ -109,8 +117,57 @@ export async function main(
     process.exit(1);
   }
 
+  // --- trace 启动（降级保护：失败则放弃 trace，claude 直连） ---
+  let effectiveBaseUrl = config.base_url;
+  if (config.trace) {
+    let proxy: import('./trace-proxy').TraceProxy | null = null;
+    let recorder: import('./trace-recorder').Recorder | null = null;
+    let filePath: string | undefined;
+    try {
+      const { generateSessionId, buildTracePath, getTracesDir, cleanSessions } = await import('./trace-session');
+      const { Recorder } = await import('./trace-recorder');
+      const { startTraceProxy } = await import('./trace-proxy');
+      const sessionId = generateSessionId(args.provider || 'provider');
+      filePath = buildTracePath(getTracesDir(), sessionId);
+      recorder = new Recorder(filePath, {
+        sessionId,
+        provider: args.provider || 'provider',
+        model: config.model,
+        startTime: new Date().toISOString(),
+        cwd: process.cwd(),
+      });
+      proxy = startTraceProxy({ upstreamBaseUrl: config.base_url, recorder });
+      effectiveBaseUrl = `http://127.0.0.1:${proxy.port}`;
+      const rec = recorder;
+      const prox = proxy;
+      traceCleanup = () => {
+        // 【必须同步】close/error 回调是同步触发的，process.exit 的 throw 必须留在同步栈，
+        // 否则测试 harness 的 exit 捕获失效（NB1）。proxy.stop() fire-and-forget，不 await。
+        try { rec.close(); } catch {}
+        if (rec.hasRecorded) {
+          try { cleanSessions(getTracesDir(), 50); } catch {}
+        } else {
+          // 未记录任何请求：删除本次的空 meta 文件，不触发清理（避免误删真实历史 session）
+          if (filePath) { try { unlinkSync(filePath); } catch {} }
+        }
+        process.stderr.write(`ccs trace saved: ${sessionId}\n`);
+        prox.stop(); // 返回 Promise 但不 await；靠 process.exit 终止进程时自然销毁（NB1+NB2）
+      };
+      process.stderr.write(`ccs trace enabled (session ${sessionId})\n`);
+    } catch (e) {
+      process.stderr.write(`ccs trace: failed to start proxy, falling back to direct connection: ${(e as Error).message}\n`);
+      effectiveBaseUrl = config.base_url;
+      // 释放已构造的资源
+      try { recorder?.close(); } catch {}
+      // 删除 Recorder 构造时已写入的 session_meta（避免遗留空 orphan 文件）
+      if (filePath) { try { unlinkSync(filePath); } catch {} }
+      try { await proxy?.stop(); } catch {}
+      traceCleanup = null;
+    }
+  }
+
   delete process.env.ANTHROPIC_API_KEY;
-  process.env.ANTHROPIC_BASE_URL = config.base_url;
+  process.env.ANTHROPIC_BASE_URL = effectiveBaseUrl;
   process.env.ANTHROPIC_AUTH_TOKEN = config.apiKey;
   process.env.ANTHROPIC_MODEL = config.model;
   process.env.ANTHROPIC_SMALL_FAST_MODEL = config.smallModel;
@@ -127,9 +184,11 @@ export async function main(
   const child = spawnFn('claude', args.rest, spawnOptions) as ChildProcess;
   child.on('error', (err: Error) => {
     process.stderr.write(chalk.red(`Error: Failed to launch claude: ${err.message}\n`));
+    if (traceCleanup) traceCleanup();
     process.exit(1);
   });
   child.on('close', (code: number | null) => {
+    if (traceCleanup) traceCleanup();
     process.exit(code ?? 1);
   });
 }
@@ -213,5 +272,6 @@ function printHelp(): void {
   console.log(`    ${chalk.cyan('ccs @help')}` + '                     显示本帮助信息');
   console.log(`    ${chalk.cyan('ccs @update')}` + '                  更新到最新版本');
   console.log(`    ${chalk.cyan('ccs @config')}` + '                  用编辑器打开配置文件');
+  console.log(`    ${chalk.cyan('ccs @trace')}` + '                   查看最近 trace 记录（需 provider 配置 trace:true）');
   console.log();
 }

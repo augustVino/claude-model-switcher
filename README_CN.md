@@ -74,6 +74,12 @@ ccs @list                    # 列出所有 provider 及模型
 ccs @init                    # 初始化或校验配置
 ccs @update                  # 更新到最新版本
 ccs @config                  # 用编辑器打开配置文件
+ccs @trace                   # 用编辑器打开 traces 目录
+ccs @trace latest            # 打开最近一次 trace 会话
+ccs @trace <session-id>      # 打开指定 trace 会话
+ccs @trace clean             # 保留最近 50 个会话，清理更早的
+ccs @trace clean --all       # 清理所有 trace 会话
+ccs @trace clean --keep N    # 保留最近 N 个会话
 ccs @help                    # 显示帮助信息
 
 # 配合 Claude Code 官方参数使用
@@ -105,6 +111,7 @@ ccs @lp -p "介绍一下这个项目"
 | default_model       | 否   | 不指定模型时的默认模型                                                                       |
 | default_small_model | 否   | 轻量模型（留空则同 default_model）                                                           |
 | models              | 否   | 可用模型列表（`string[]`）。不配置时回退显示 default_model + default_small_model             |
+| trace               | 否   | 设为 `true` 可将该 provider 的 API 流量记录到 `~/.config/claude-model-switcher/traces/`，用于调试 |
 
 **规则：**
 
@@ -124,6 +131,24 @@ ccs @lp -p "介绍一下这个项目"
 ```
 
 无需修改任何代码。
+
+## 追踪 API 流量
+
+在 provider 上设置 `"trace": true`，即可记录每次 Claude Code 调用该 provider 的 API 请求/响应，便于调试。Trace 以 JSONL 文件形式写入 `~/.config/claude-model-switcher/traces/`，文件名为 `<yyyymmddHHMMSS>-<provider>-<8hex>.jsonl`（例如 `20260701143022-zhipu-a1b2c3d4.jsonl`）。敏感的请求/响应头会被打码。
+
+```json
+{
+  "name": "zhipu",
+  "base_url": "https://open.bigmodel.cn/api/anthropic",
+  "api_key_env": "ZHIPU_API_KEY",
+  "default_model": "glm-4.6",
+  "trace": true
+}
+```
+
+通过 `ccs @trace` 查看已记录的会话（详见[用法](#用法)）。默认保留最近 50 个会话，更早的会在新会话记录时自动清理；也可用 `ccs @trace clean [--all|--keep N]` 手动清理。
+
+注意：trace 记录中的 `incomplete` 标记并不能捕获所有上游中断。`Bun.fetch`（WHATWG Streams）可能将上游的流中途断开规整为干净的 EOF，此时 `incomplete` 保持 `false`；该标记仅在代理读取流被拒绝（如 TCP reset）时才会置位。
 
 ## 许可证
 

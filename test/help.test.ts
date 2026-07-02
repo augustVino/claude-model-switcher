@@ -39,6 +39,7 @@ describe('@help command', () => {
     expect(output).toContain('ccs @list');
     expect(output).toContain('ccs @help');
     expect(output).toContain('ccs @update');
+    expect(output).toContain('ccs @trace');
   });
 
   it('does not require config file to exist', async () => {

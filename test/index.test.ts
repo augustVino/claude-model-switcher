@@ -1,6 +1,7 @@
 import { describe, expect, it, beforeEach, afterEach, spyOn } from 'bun:test';
 import { main } from '../src/index';
 import { readFileSync } from 'node:fs';
+import * as updateChecker from '../src/update-checker';
 
 /** Sentinel error thrown by the process.exit mock to halt execution. */
 class ExitCaptureError extends Error {
@@ -13,6 +14,16 @@ async function runMain(argv: string[], spawnFn?: Parameters<typeof main>[1]): Pr
   } catch (e) {
     if (e instanceof ExitCaptureError) return; // expected — process.exit was called
     throw e; // re-throw unexpected errors
+  }
+}
+
+/** 抑制 checkUpdateNotification 的后台网络 spawn，仅在本次调用内生效。 */
+async function runMainQuiet(argv: string[], spawnFn?: Parameters<typeof main>[1]): Promise<void> {
+  const spy = spyOn(updateChecker, 'checkUpdateNotification').mockImplementation(() => undefined);
+  try {
+    await runMain(argv, spawnFn);
+  } finally {
+    spy.mockRestore();
   }
 }
 import { setupTmpDir, writeConfig, getTmpDir } from './helpers';
@@ -319,5 +330,95 @@ describe('main', () => {
     expect(stderrSpy).toHaveBeenCalledWith(expect.stringContaining('ccs @init'));
 
     stderrSpy.mockRestore();
+  });
+
+  it('rewrites ANTHROPIC_BASE_URL to local proxy for trace provider', async () => {
+    await writeConfig(JSON.stringify([{
+      name: 'zhipu', base_url: 'https://open.bigmodel.cn/api/anthropic',
+      api_key_env: 'TEST_KEY', default_model: 'glm-4.6', trace: true
+    }]));
+    process.env.TEST_KEY = 'secret-key';
+    const mockFn = mockSpawnClose(0);
+    await runMainQuiet(['@zhipu'], mockFn);
+    expect(process.env.ANTHROPIC_BASE_URL).toMatch(/^http:\/\/127\.0\.0\.1:\d+$/);
+  });
+
+  it('leaves ANTHROPIC_BASE_URL unchanged for non-trace provider', async () => {
+    await writeConfig(JSON.stringify([{
+      name: 'zhipu', base_url: 'https://open.bigmodel.cn/api/anthropic',
+      api_key_env: 'TEST_KEY', default_model: 'glm-4.6'
+    }]));
+    process.env.TEST_KEY = 'secret-key';
+    const mockFn = mockSpawnClose(0);
+    await runMainQuiet(['@zhipu'], mockFn);
+    expect(process.env.ANTHROPIC_BASE_URL).toBe('https://open.bigmodel.cn/api/anthropic');
+  });
+
+  it('dispatches @trace to viewer (no claude spawn)', async () => {
+    const spawnCalls: string[][] = [];
+    const spawnFn = function (cmd: string, args?: string[]): ChildProcess {
+      spawnCalls.push([cmd, ...(args ?? [])]);
+      return { on() { return this; } } as unknown as ChildProcess;
+    };
+    const tv = await import('../src/trace-viewer');
+    const spy = spyOn(tv, 'viewTrace').mockImplementation(() => undefined);
+    let called = false;
+    try {
+      await runMainQuiet(['@trace'], spawnFn as any);
+      called = spy.mock.calls.length > 0;
+    } finally {
+      spy.mockRestore();
+    }
+    expect(called).toBe(true);
+    expect(spawnCalls.some(c => c[0] === 'claude')).toBe(false);
+  });
+
+  it('deletes its own empty trace session and skips cleanup when no requests recorded', async () => {
+    await writeConfig(JSON.stringify([{
+      name: 'zhipu', base_url: 'https://open.bigmodel.cn/api/anthropic',
+      api_key_env: 'TEST_KEY', default_model: 'glm-4.6', trace: true
+    }]));
+    process.env.TEST_KEY = 'secret-key';
+
+    // Seed an older real session that must NOT be removed by the empty-session exit.
+    const { getTracesDir } = await import('../src/trace-session');
+    const { listSessions } = await import('../src/trace-session');
+    const { writeFile, mkdir } = await import('node:fs/promises');
+    const tracesDir = getTracesDir();
+    await mkdir(tracesDir, { recursive: true });
+    const oldSession = '20250101000000-zhipu-oldoldold';
+    await writeFile(join(tracesDir, `${oldSession}.jsonl`), '{"type":"session_meta"}\n');
+
+    const mockFn = mockSpawnClose(0); // claude exits before any request → turn stays 0
+    await runMainQuiet(['@zhipu'], mockFn);
+
+    // The empty session this run created (meta-only, turn=0) must be self-deleted;
+    // the seeded real session must survive (no cleanup ran).
+    expect(listSessions(tracesDir)).toEqual([oldSession]);
+  });
+
+  it('falls back to direct connection when proxy start fails', async () => {
+    await writeConfig(JSON.stringify([{
+      name: 'zhipu', base_url: 'https://open.bigmodel.cn/api/anthropic',
+      api_key_env: 'TEST_KEY', default_model: 'glm-4.6', trace: true
+    }]));
+    process.env.TEST_KEY = 'secret-key';
+    const tp = await import('../src/trace-proxy');
+    const spy = spyOn(tp, 'startTraceProxy').mockImplementation(() => { throw new Error('boom'); });
+    const errSpy = spyOn(process.stderr, 'write');
+    const mockFn = mockSpawnClose(0);
+    try {
+      await runMainQuiet(['@zhipu'], mockFn);
+    } finally {
+      spy.mockRestore();
+      errSpy.mockRestore();
+    }
+    expect(process.env.ANTHROPIC_BASE_URL).toBe('https://open.bigmodel.cn/api/anthropic');
+    expect((mockFn as any).__lastCall().cmd).toBe('claude');
+    // Recorder writes session_meta before startTraceProxy throws; the orphan file
+    // must be removed so the traces dir is not polluted with an empty session.
+    const { getTracesDir } = await import('../src/trace-session');
+    const { listSessions } = await import('../src/trace-session');
+    expect(listSessions(getTracesDir())).toEqual([]);
   });
 });

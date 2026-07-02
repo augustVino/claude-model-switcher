@@ -53,5 +53,5 @@ export function resolveProvider(
     );
   }
 
-  return { base_url: pc.base_url, apiKey, model, smallModel };
+  return { base_url: pc.base_url, apiKey, model, smallModel, trace: pc.trace === true };
 }

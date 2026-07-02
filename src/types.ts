@@ -5,6 +5,7 @@ export interface Provider {
   default_model?: string;
   default_small_model?: string;
   models?: string[];
+  trace?: boolean;
 }
 
 export interface ParsedArgs {
@@ -16,6 +17,7 @@ export interface ParsedArgs {
   isInitCommand: boolean;
   isUpdateCommand: boolean;
   isConfigCommand: boolean;
+  isTraceCommand: boolean;
 }
 
 export interface ResolvedConfig {
@@ -23,6 +25,7 @@ export interface ResolvedConfig {
   apiKey: string;
   model: string;
   smallModel: string;
+  trace: boolean;
 }
 
 /** Resolve the set of available models for a provider. */

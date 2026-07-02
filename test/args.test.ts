@@ -89,4 +89,28 @@ describe('parseArgs', () => {
     expect(result.isInitCommand).toBe(false);
     expect(result.isUpdateCommand).toBe(false);
   });
+
+  it('parses @trace as trace command', () => {
+    const a = parseArgs(['@trace']);
+    expect(a.isTraceCommand).toBe(true);
+    expect(a.provider).toBe('');
+  });
+
+  it('keeps @trace args in rest', () => {
+    expect(parseArgs(['@trace', 'latest'])).toMatchObject({ isTraceCommand: true, rest: ['latest'] });
+  });
+
+  it('keeps @trace clean --keep N in rest', () => {
+    expect(parseArgs(['@trace', 'clean', '--keep', '10'])).toMatchObject({
+      isTraceCommand: true, rest: ['clean', '--keep', '10'],
+    });
+  });
+
+  it('second @ token falls into rest (documented: @trace must be the only @)', () => {
+    // @zhipu 先消费 provider 槽，@trace 作为第二个 @ 落入 rest（透传给 claude）
+    const a = parseArgs(['@zhipu', '@trace']);
+    expect(a.provider).toBe('zhipu');
+    expect(a.rest).toEqual(['@trace']);
+    expect(a.isTraceCommand).toBe(false);
+  });
 });

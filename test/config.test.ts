@@ -117,4 +117,22 @@ describe('readConfig', () => {
     expect(result[0].default_small_model).toBe('m2');
     expect(result[0].models).toEqual(['m1', 'm2', 'm3']);
   });
+
+  it('throws ConfigError when provider name is reserved "trace"', async () => {
+    const path = join(tmpDir, 'providers.json');
+    await writeFile(path, '[{"name":"trace","base_url":"http://a","api_key_env":"K"}]');
+    expect(() => readConfig(path)).toThrow(ConfigError);
+    try { readConfig(path); } catch (e) {
+      expect((e as ConfigError).message).toContain('"trace" is reserved');
+    }
+  });
+
+  it('accepts optional trace field', async () => {
+    await writeConfig(JSON.stringify([{
+      name: 'zhipu', base_url: 'http://a', api_key_env: 'K',
+      default_model: 'm', trace: true
+    }]));
+    const providers = readConfig(join(tmpDir, 'claude-model-switcher', 'providers.json'));
+    expect(providers[0].trace).toBe(true);
+  });
 });

@@ -107,4 +107,18 @@ describe('resolveProvider', () => {
     expect(cfg.model).toBe('qwen3');
     expect(cfg.smallModel).toBe('qwen3');
   });
+
+  it('resolves trace=true when provider has trace:true', () => {
+    const providers = [{ name: 'zhipu', base_url: 'http://a', api_key_env: 'K', default_model: 'm', trace: true }];
+    process.env.K = 'key';
+    const cfg = resolveProvider(providers, { provider: 'zhipu', model: '', rest: [], isListCommand: false, isHelpCommand: false, isInitCommand: false, isUpdateCommand: false, isConfigCommand: false, isTraceCommand: false });
+    expect(cfg.trace).toBe(true);
+  });
+
+  it('resolves trace=false when provider omits trace', () => {
+    const providers = [{ name: 'zhipu', base_url: 'http://a', api_key_env: 'K', default_model: 'm' }];
+    process.env.K = 'key';
+    const cfg = resolveProvider(providers, { provider: 'zhipu', model: '', rest: [], isListCommand: false, isHelpCommand: false, isInitCommand: false, isUpdateCommand: false, isConfigCommand: false, isTraceCommand: false });
+    expect(cfg.trace).toBe(false);
+  });
 });
